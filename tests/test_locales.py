@@ -5,6 +5,11 @@ from unittest.mock import patch
 
 
 class TestSupportedLanguages(unittest.TestCase):
+    def setUp(self):
+        from vvrite.locales import _clear_cache
+
+        _clear_cache()
+
     def test_supported_languages_is_list_of_tuples(self):
         from vvrite.locales import SUPPORTED_LANGUAGES
 
@@ -37,8 +42,9 @@ class TestSupportedLanguages(unittest.TestCase):
 
 class TestTranslation(unittest.TestCase):
     def setUp(self):
-        from vvrite.locales import set_locale
+        from vvrite.locales import set_locale, _clear_cache
 
+        _clear_cache()
         set_locale("en")
 
     def test_t_returns_correct_string(self):
@@ -69,6 +75,11 @@ class TestTranslation(unittest.TestCase):
 
 
 class TestLocaleManagement(unittest.TestCase):
+    def setUp(self):
+        from vvrite.locales import _clear_cache
+
+        _clear_cache()
+
     def test_set_and_get_locale(self):
         from vvrite.locales import set_locale, get_locale
 
@@ -95,6 +106,11 @@ class TestLocaleManagement(unittest.TestCase):
 
 class TestEnglishStringsCompleteness(unittest.TestCase):
     """Verify en.py strings dict has all required top-level groups."""
+
+    def setUp(self):
+        from vvrite.locales import _clear_cache
+
+        _clear_cache()
 
     def test_all_groups_present(self):
         from vvrite.locales.en import strings

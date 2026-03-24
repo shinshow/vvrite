@@ -57,33 +57,41 @@ def get_locale() -> str:
     return _current_locale
 
 
+def _clear_cache():
+    """Clear the strings cache. For testing only."""
+    _strings_cache.clear()
+
+
 def resolve_system_locale() -> str:
     """Detect the system locale and return the best matching supported code.
 
     Uses NSLocale.preferredLanguages() from Foundation.
     Match strategy: exact match first, then base language, fallback to 'en'.
     """
-    preferred = NSLocale.preferredLanguages()
-    if not preferred:
+    try:
+        preferred = NSLocale.preferredLanguages()
+        if not preferred:
+            return "en"
+
+        for lang in preferred:
+            lang = str(lang)
+            # Exact match (e.g. "zh-Hans")
+            if lang in _SUPPORTED_CODES:
+                return lang
+            # Normalise Apple-style separators: "zh-Hans-US" -> try "zh-Hans"
+            parts = lang.split("-")
+            if len(parts) >= 2:
+                candidate = f"{parts[0]}-{parts[1]}"
+                if candidate in _SUPPORTED_CODES:
+                    return candidate
+            # Base language match (e.g. "ko-KR" -> "ko")
+            base = parts[0]
+            if base in _SUPPORTED_CODES:
+                return base
+
         return "en"
-
-    for lang in preferred:
-        lang = str(lang)
-        # Exact match (e.g. "zh-Hans")
-        if lang in _SUPPORTED_CODES:
-            return lang
-        # Normalise Apple-style separators: "zh-Hans-US" -> try "zh-Hans"
-        parts = lang.split("-")
-        if len(parts) >= 2:
-            candidate = f"{parts[0]}-{parts[1]}"
-            if candidate in _SUPPORTED_CODES:
-                return candidate
-        # Base language match (e.g. "ko-KR" -> "ko")
-        base = parts[0]
-        if base in _SUPPORTED_CODES:
-            return base
-
-    return "en"
+    except Exception:
+        return "en"
 
 
 def t(key: str, **kwargs) -> str:
