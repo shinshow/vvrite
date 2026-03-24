@@ -23,8 +23,16 @@ def list_system_sounds() -> list[str]:
     return sorted(names)
 
 
-def play(name: str):
-    """Play a macOS system sound by name (non-blocking)."""
-    sound = NSSound.soundNamed_(name)
-    if sound:
-        sound.play()
+def play(name: str, volume: float = 1.0):
+    """Play a sound by system name or file path, at the given volume (0.0-1.0)."""
+    if is_custom_path(name):
+        sound = NSSound.alloc().initWithContentsOfFile_byReference_(name, True)
+    else:
+        shared = NSSound.soundNamed_(name)
+        if shared is None:
+            return
+        sound = shared.copy()
+    if sound is None:
+        return
+    sound.setVolume_(volume)
+    sound.play()
