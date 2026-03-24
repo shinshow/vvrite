@@ -2,6 +2,8 @@
 
 import objc
 import ApplicationServices
+import os
+
 from AppKit import (
     NSObject,
     NSMakeRect,
@@ -19,10 +21,13 @@ from AppKit import (
     NSBezelStyleRounded,
     NSAlert,
     NSWorkspace,
+    NSSlider,
+    NSOpenPanel,
+    NSMenuItem,
 )
 from Foundation import NSLog, NSURL, NSTimer
 
-from vvrite import launch_at_login
+from vvrite import launch_at_login, sounds
 from vvrite.audio_devices import (
     get_default_input_device,
     list_input_devices,
@@ -50,11 +55,17 @@ class SettingsWindowController(NSObject):
         self._mic_device_ids = [None]
         self._login_checkbox = None
         self._custom_words_field = None
+        self._start_sound_popup = None
+        self._stop_sound_popup = None
+        self._start_volume_slider = None
+        self._stop_volume_slider = None
+        self._start_volume_label = None
+        self._stop_volume_label = None
         self._build_window()
         return self
 
     def _build_window(self):
-        frame = NSMakeRect(0, 0, 400, 586)
+        frame = NSMakeRect(0, 0, 400, 706)
         self._window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             frame,
             NSWindowStyleMaskTitled | NSWindowStyleMaskClosable,
@@ -67,7 +78,7 @@ class SettingsWindowController(NSObject):
         self._window.setDelegate_(self)
 
         content = self._window.contentView()
-        y = 572
+        y = 692
 
         # --- Shortcut ---
         y -= 30
@@ -188,6 +199,94 @@ class SettingsWindowController(NSObject):
         hint.setTextColor_(NSColor.secondaryLabelColor())
         content.addSubview_(hint)
 
+        # --- Sound ---
+        y -= 40
+        label = NSTextField.labelWithString_("Sound")
+        label.setFrame_(NSMakeRect(20, y, 360, 20))
+        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
+        content.addSubview_(label)
+
+        # Start sound row
+        y -= 30
+        start_label = NSTextField.labelWithString_("Start")
+        start_label.setFrame_(NSMakeRect(20, y, 50, 20))
+        start_label.setAlignment_(2)  # NSTextAlignmentRight
+        start_label.setTextColor_(NSColor.secondaryLabelColor())
+        start_label.setFont_(NSFont.systemFontOfSize_(12.0))
+        content.addSubview_(start_label)
+
+        self._start_sound_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(76, y, 140, 24), False
+        )
+        self._start_sound_popup.setTarget_(self)
+        self._start_sound_popup.setAction_("startSoundChanged:")
+        content.addSubview_(self._start_sound_popup)
+
+        self._start_volume_slider = NSSlider.alloc().initWithFrame_(
+            NSMakeRect(222, y, 120, 24)
+        )
+        self._start_volume_slider.setMinValue_(0)
+        self._start_volume_slider.setMaxValue_(100)
+        self._start_volume_slider.setIntValue_(int(self._prefs.start_volume * 100))
+        self._start_volume_slider.setContinuous_(True)
+        self._start_volume_slider.setTarget_(self)
+        self._start_volume_slider.setAction_("startVolumeChanged:")
+        content.addSubview_(self._start_volume_slider)
+
+        self._start_volume_label = NSTextField.labelWithString_(
+            f"{int(self._prefs.start_volume * 100)}%"
+        )
+        self._start_volume_label.setFrame_(NSMakeRect(348, y, 40, 20))
+        self._start_volume_label.setTextColor_(NSColor.secondaryLabelColor())
+        self._start_volume_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        content.addSubview_(self._start_volume_label)
+
+        # Stop sound row
+        y -= 30
+        stop_label = NSTextField.labelWithString_("Stop")
+        stop_label.setFrame_(NSMakeRect(20, y, 50, 20))
+        stop_label.setAlignment_(2)  # NSTextAlignmentRight
+        stop_label.setTextColor_(NSColor.secondaryLabelColor())
+        stop_label.setFont_(NSFont.systemFontOfSize_(12.0))
+        content.addSubview_(stop_label)
+
+        self._stop_sound_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(76, y, 140, 24), False
+        )
+        self._stop_sound_popup.setTarget_(self)
+        self._stop_sound_popup.setAction_("stopSoundChanged:")
+        content.addSubview_(self._stop_sound_popup)
+
+        self._stop_volume_slider = NSSlider.alloc().initWithFrame_(
+            NSMakeRect(222, y, 120, 24)
+        )
+        self._stop_volume_slider.setMinValue_(0)
+        self._stop_volume_slider.setMaxValue_(100)
+        self._stop_volume_slider.setIntValue_(int(self._prefs.stop_volume * 100))
+        self._stop_volume_slider.setContinuous_(True)
+        self._stop_volume_slider.setTarget_(self)
+        self._stop_volume_slider.setAction_("stopVolumeChanged:")
+        content.addSubview_(self._stop_volume_slider)
+
+        self._stop_volume_label = NSTextField.labelWithString_(
+            f"{int(self._prefs.stop_volume * 100)}%"
+        )
+        self._stop_volume_label.setFrame_(NSMakeRect(348, y, 40, 20))
+        self._stop_volume_label.setTextColor_(NSColor.secondaryLabelColor())
+        self._stop_volume_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        content.addSubview_(self._stop_volume_label)
+
+        y -= 20
+        hint = NSTextField.labelWithString_(
+            "슬라이더를 조절하면 선택된 소리가 자동으로 재생됩니다"
+        )
+        hint.setFrame_(NSMakeRect(76, y, 310, 16))
+        hint.setFont_(NSFont.systemFontOfSize_(11.0))
+        hint.setTextColor_(NSColor.secondaryLabelColor())
+        content.addSubview_(hint)
+
+        self._populate_sounds()
+
         # --- Permissions ---
         y -= 40
         label = NSTextField.labelWithString_("Permissions")
@@ -243,6 +342,30 @@ class SettingsWindowController(NSObject):
         self._refresh_login_checkbox()
         self._refresh_retract_controls()
 
+    def _populate_sounds(self):
+        """Populate both sound dropdowns with system sounds + Custom option."""
+        system_sounds = sounds.list_system_sounds()
+        for popup, pref_value in [
+            (self._start_sound_popup, self._prefs.sound_start),
+            (self._stop_sound_popup, self._prefs.sound_stop),
+        ]:
+            popup.removeAllItems()
+            for name in system_sounds:
+                popup.addItemWithTitle_(name)
+            popup.menu().addItem_(NSMenuItem.separatorItem())
+            popup.addItemWithTitle_("Custom...")
+
+            # Select current value
+            if sounds.is_custom_path(pref_value):
+                filename = os.path.basename(pref_value)
+                if filename:  # guard against empty/malformed paths
+                    popup.insertItemWithTitle_atIndex_(filename, len(system_sounds))
+                    popup.selectItemAtIndex_(len(system_sounds))
+            else:
+                idx = popup.indexOfItemWithTitle_(pref_value)
+                if idx >= 0:
+                    popup.selectItemAtIndex_(idx)
+
     def _populate_mics(self):
         self._mic_popup.removeAllItems()
         devices = list_input_devices()
@@ -274,6 +397,7 @@ class SettingsWindowController(NSObject):
 
     def showWindow_(self, sender):
         self._populate_mics()
+        self._populate_sounds()
         self._window.makeKeyAndOrderFront_(sender)
         self._permission_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             2.0, self, "pollPermissions:", None, True
@@ -376,6 +500,70 @@ class SettingsWindowController(NSObject):
             self._retract_shortcut_field.setEnabled_(enabled)
         if self._retract_change_btn is not None:
             self._retract_change_btn.setEnabled_(enabled)
+
+    @objc.typedSelector(b"v@:@")
+    def startSoundChanged_(self, sender):
+        title = sender.titleOfSelectedItem()
+        if title == "Custom...":
+            self._open_custom_sound_panel(for_start=True)
+            return
+        self._prefs.sound_start = title
+        sounds.play(title, self._prefs.start_volume)
+
+    @objc.typedSelector(b"v@:@")
+    def stopSoundChanged_(self, sender):
+        title = sender.titleOfSelectedItem()
+        if title == "Custom...":
+            self._open_custom_sound_panel(for_start=False)
+            return
+        self._prefs.sound_stop = title
+        sounds.play(title, self._prefs.stop_volume)
+
+    @objc.typedSelector(b"v@:@")
+    def startVolumeChanged_(self, sender):
+        vol = sender.intValue() / 100.0
+        self._prefs.start_volume = vol
+        self._start_volume_label.setStringValue_(f"{sender.intValue()}%")
+        # Play preview only on mouse-up (NSEventTypeLeftMouseUp == 2)
+        event = NSApp.currentEvent()
+        if event and event.type() == 2:
+            sounds.play(self._prefs.sound_start, vol)
+
+    @objc.typedSelector(b"v@:@")
+    def stopVolumeChanged_(self, sender):
+        vol = sender.intValue() / 100.0
+        self._prefs.stop_volume = vol
+        self._stop_volume_label.setStringValue_(f"{sender.intValue()}%")
+        # Play preview only on mouse-up (NSEventTypeLeftMouseUp == 2)
+        event = NSApp.currentEvent()
+        if event and event.type() == 2:
+            sounds.play(self._prefs.sound_stop, vol)
+
+    def _open_custom_sound_panel(self, for_start: bool):
+        import UniformTypeIdentifiers
+        panel = NSOpenPanel.openPanel()
+        allowed_types = [
+            UniformTypeIdentifiers.UTType.typeWithFilenameExtension_(ext)
+            for ext in ["aiff", "wav", "mp3", "m4a", "caf"]
+        ]
+        panel.setAllowedContentTypes_(allowed_types)
+        panel.setCanChooseFiles_(True)
+        panel.setCanChooseDirectories_(False)
+        panel.setAllowsMultipleSelection_(False)
+        panel.setTitle_("Choose a sound file")
+
+        if panel.runModal() == 1:  # NSModalResponseOK
+            path = str(panel.URL().path())
+            if for_start:
+                self._prefs.sound_start = path
+                sounds.play(path, self._prefs.start_volume)
+            else:
+                self._prefs.sound_stop = path
+                sounds.play(path, self._prefs.stop_volume)
+            self._populate_sounds()
+        else:
+            # User cancelled — revert dropdown to current selection
+            self._populate_sounds()
 
     def _show_launch_at_login_error(self, message):
         alert = NSAlert.alloc().init()
