@@ -191,7 +191,7 @@ class AppDelegate(NSObject):
 
     def _start_recording(self):
         self._recording = True
-        sounds.play(self._prefs.sound_start)
+        sounds.play(self._prefs.sound_start, self._prefs.start_volume)
 
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
             "showRecordingUI:", None, False
@@ -215,7 +215,7 @@ class AppDelegate(NSObject):
 
     def _stop_recording(self):
         self._recording = False
-        sounds.play(self._prefs.sound_stop)
+        sounds.play(self._prefs.sound_stop, self._prefs.stop_volume)
 
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
             "showTranscribingUI:", None, False
