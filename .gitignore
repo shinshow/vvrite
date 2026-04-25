@@ -7,6 +7,11 @@ __pycache__/
 .superpowers/
 .worktrees/
 
+vendor/whisper.cpp/whisper-cli
+vendor/whisper.cpp/main
+vendor/whisper.cpp/*.dylib
+vendor/whisper.cpp/build/
+
 # Code signing / notarization (contains team identity)
 scripts/build.sh
 CLAUDE.md

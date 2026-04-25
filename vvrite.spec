@@ -1,4 +1,5 @@
 """PyInstaller spec for vvrite macOS app."""
+import glob
 import importlib.util
 import os
 import sys
@@ -19,6 +20,18 @@ if mlx_spec is None or not mlx_spec.submodule_search_locations:
     raise RuntimeError("Unable to locate mlx package for PyInstaller datas")
 mlx_package_dir = mlx_spec.submodule_search_locations[0]
 
+whisper_cli = os.path.join(ROOT_DIR, "vendor", "whisper.cpp", "whisper-cli")
+if not os.path.exists(whisper_cli):
+    whisper_cli = os.path.join(ROOT_DIR, "vendor", "whisper.cpp", "main")
+if not os.path.exists(whisper_cli):
+    raise RuntimeError("Missing whisper.cpp sidecar. Run scripts/build_whisper_cpp.sh")
+whisper_dylibs = glob.glob(os.path.join(ROOT_DIR, "vendor", "whisper.cpp", "*.dylib"))
+if not whisper_dylibs:
+    raise RuntimeError("Missing whisper.cpp dylibs. Run scripts/build_whisper_cpp.sh")
+whisper_binaries = [(whisper_cli, "whisper.cpp")] + [
+    (path, "whisper.cpp") for path in sorted(whisper_dylibs)
+]
+
 # PyObjC bridge modules need all submodules collected
 pyobjc_hiddenimports = (
     collect_submodules("objc")
@@ -35,6 +48,7 @@ a = Analysis(
     pathex=[],
     binaries=[
         ("/opt/homebrew/bin/ffmpeg", "."),
+        *whisper_binaries,
     ],
     datas=[
         # soundfile needs libsndfile

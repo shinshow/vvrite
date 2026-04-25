@@ -52,6 +52,11 @@ unzip -o "$MLX_COMPAT_DIR"/mlx_metal-*.whl "mlx/lib/mlx.metallib" -d "$SITE" > /
 rm -rf "$MLX_COMPAT_DIR"
 echo "  ✓ Backward-compatible metallib installed (macOS 15+)"
 
+# ── Step 0.75: whisper.cpp sidecar ─────────────────────────────
+echo "▸ Building whisper.cpp sidecar..."
+"$(dirname "$0")/build_whisper_cpp.sh"
+echo "  ✓ whisper.cpp sidecar ready"
+
 # ── Step 1: Build ──────────────────────────────────────────────
 echo "▸ Building with PyInstaller..."
 pyinstaller vvrite.spec --noconfirm
