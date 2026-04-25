@@ -33,6 +33,7 @@ from AppKit import (
 from Foundation import NSLog, NSURL, NSTimer
 
 from vvrite.locales import t, set_locale, SUPPORTED_LANGUAGES
+from vvrite.asr_models import get_model
 from vvrite.widgets import ShortcutField
 from vvrite import transcriber
 
@@ -559,7 +560,8 @@ class OnboardingWindowController(NSObject):
         area.addSubview_(title)
 
         # Model name
-        name_label = NSTextField.labelWithString_(self._prefs.model_id)
+        model = get_model(self._prefs.asr_model_key)
+        name_label = NSTextField.labelWithString_(model.display_name)
         name_label.setFrame_(NSMakeRect(20, 138, w - 40, 20))
         name_label.setFont_(NSFont.systemFontOfSize_(12.0))
         name_label.setAlignment_(1)
@@ -626,7 +628,7 @@ class OnboardingWindowController(NSObject):
         threading.Thread(target=self._fetch_model_size, daemon=True).start()
 
     def _fetch_model_size(self):
-        size = transcriber.get_model_size(self._prefs.model_id)
+        size = transcriber.get_model_size(self._prefs.asr_model_key)
         self.performSelectorOnMainThread_withObject_waitUntilDone_(
             "updateSizeLabel:", str(size), False
         )
@@ -653,9 +655,8 @@ class OnboardingWindowController(NSObject):
         threading.Thread(target=self._do_download, daemon=True).start()
 
     def _do_download(self):
-        model_id = self._prefs.model_id
         try:
-            local_path = transcriber.download_model(model_id)
+            local_path = transcriber.download_model(self._prefs.asr_model_key)
         except Exception as e:
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
                 "downloadFailed:", str(e), False
@@ -688,7 +689,7 @@ class OnboardingWindowController(NSObject):
 
     def _do_load_model(self, local_path):
         try:
-            transcriber.load_from_local(local_path)
+            transcriber.load_from_local(local_path, self._prefs)
         except Exception as e:
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
                 "modelLoadFailed:", str(e), False

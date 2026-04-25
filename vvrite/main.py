@@ -63,7 +63,7 @@ class AppDelegate(NSObject):
         self._status_bar = StatusBarController.alloc().initWithDelegate_(self)
         self._overlay = OverlayController.alloc().init()
 
-        if not self._prefs.onboarding_completed or not transcriber.is_model_cached(self._prefs.model_id):
+        if not self._prefs.onboarding_completed or not transcriber.is_model_cached(self._prefs.asr_model_key):
             self._prefs.onboarding_completed = False
             self._onboarding_wc = (
                 OnboardingWindowController.alloc()
