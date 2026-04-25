@@ -6,7 +6,6 @@ import tempfile
 import numpy as np
 import soundfile as sf
 from huggingface_hub import model_info, snapshot_download
-from mlx_audio.stt.utils import load_model
 
 from vvrite import audio_utils, model_store
 from vvrite.locales import ASR_LANGUAGE_MAP
@@ -50,6 +49,8 @@ def download(model_id: str) -> str:
 
 
 def load_from_local(local_path: str):
+    from mlx_audio.stt.utils import load_model
+
     global _model, _warmed_up
     _model = load_model(local_path)
     _warmed_up = False
@@ -57,6 +58,8 @@ def load_from_local(local_path: str):
 
 
 def load(model_id: str):
+    from mlx_audio.stt.utils import load_model
+
     global _model, _warmed_up
     _model = load_model(model_id)
     _warmed_up = False

@@ -111,5 +111,21 @@ class TestTranscriberRouter(unittest.TestCase):
         backend.transcribe.assert_called_once()
 
 
+class TestQwenBackend(unittest.TestCase):
+    @patch("vvrite.asr_backends.qwen.model_store.model_dir", return_value="/tmp/qwen")
+    @patch("vvrite.asr_backends.qwen.snapshot_download")
+    def test_qwen_cache_check_does_not_require_model_load(
+        self, mock_snapshot_download, mock_model_dir
+    ):
+        from vvrite.asr_backends import qwen
+
+        self.assertTrue(qwen.is_cached("mlx-community/Qwen3-ASR-1.7B-8bit"))
+        mock_snapshot_download.assert_called_once_with(
+            repo_id="mlx-community/Qwen3-ASR-1.7B-8bit",
+            local_dir="/tmp/qwen",
+            local_files_only=True,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
