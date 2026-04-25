@@ -1,134 +1,93 @@
-"""Qwen3 ASR transcription using mlx-audio."""
+"""ASR transcription router."""
 
-import os
-import tempfile
+from importlib import import_module
 
-import numpy as np
-import soundfile as sf
-from huggingface_hub import model_info, snapshot_download
-from mlx_audio.stt.utils import load_model
+from vvrite.asr_models import BACKEND_QWEN_MLX, get_model
+from vvrite.preferences import Preferences
 
-from vvrite.preferences import Preferences, SAMPLE_RATE
-from vvrite import audio_utils
+_loaded_model_key = None
 
 
-_model = None
-_warmed_up = False
+def _qwen_backend():
+    return import_module("vvrite.asr_backends.qwen")
+
+
+def _selected_model(prefs: Preferences | None = None):
+    if prefs is None:
+        prefs = Preferences()
+    return get_model(prefs.asr_model_key)
 
 
 def is_model_loaded() -> bool:
-    """Return True if the ASR model is loaded in memory."""
-    return _model is not None
+    return _loaded_model_key is not None
 
 
-def is_model_cached(model_id: str) -> bool:
-    """Return True if the model is already downloaded locally."""
-    try:
-        snapshot_download(repo_id=model_id, local_files_only=True)
-        return True
-    except Exception:
-        return False
+def is_model_cached(model_id_or_key: str) -> bool:
+    model = get_model(model_id_or_key)
+    if model.backend == BACKEND_QWEN_MLX:
+        return _qwen_backend().is_cached(model.model_id)
+    raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")
 
 
-def get_model_size(model_id: str) -> int:
-    """Return total model size in bytes. Returns 0 on error."""
-    try:
-        info = model_info(model_id, files_metadata=True)
-        return sum(s.size for s in info.siblings if s.size)
-    except Exception:
-        return 0
+def get_model_size(model_id_or_key: str) -> int:
+    model = get_model(model_id_or_key)
+    if model.backend == BACKEND_QWEN_MLX:
+        return _qwen_backend().get_size(model.model_id)
+    return 0
 
 
-def download_model(model_id: str) -> str:
-    """Download model files and return local path."""
-    return snapshot_download(repo_id=model_id)
+def download_model(model_id_or_key: str) -> str:
+    model = get_model(model_id_or_key)
+    if model.backend == BACKEND_QWEN_MLX:
+        return _qwen_backend().download(model.model_id)
+    raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")
 
 
-def load_from_local(local_path: str):
-    """Load model from a local directory into memory."""
-    global _model, _warmed_up
-    _model = load_model(local_path)
-    _warmed_up = False
-    _safe_warm_up()
+def load_from_local(local_path: str, prefs: Preferences = None):
+    global _loaded_model_key
+    model = _selected_model(prefs)
+    if model.backend == BACKEND_QWEN_MLX:
+        _qwen_backend().load_from_local(local_path)
+        _loaded_model_key = model.key
+        return
+    raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")
 
 
 def load(prefs: Preferences = None):
-    """Download + load in one step. Used by existing non-onboarding flow."""
-    global _model, _warmed_up
+    global _loaded_model_key
     if prefs is None:
         prefs = Preferences()
-    model_id = prefs.model_id
-    print(f"Loading model: {model_id} ...")
-    _model = load_model(model_id)
-    _warmed_up = False
-    _safe_warm_up()
-    print("Model loaded.")
-
-
-def _create_warmup_audio() -> str:
-    fd, path = tempfile.mkstemp(suffix=".wav")
-    os.close(fd)
-    sf.write(path, np.zeros(SAMPLE_RATE // 2, dtype=np.float32), SAMPLE_RATE)
-    return path
-
-
-def warm_up():
-    """Run a tiny silent transcription to trigger first-use compilation work."""
-    global _warmed_up
-    if _model is None or _warmed_up:
+    model = _selected_model(prefs)
+    print(f"Loading model: {model.display_name} ({model.model_id}) ...")
+    if model.backend == BACKEND_QWEN_MLX:
+        _qwen_backend().load(model.model_id)
+        _loaded_model_key = model.key
+        print("Model loaded.")
         return
-
-    warmup_path = _create_warmup_audio()
-    try:
-        _model.generate(warmup_path, max_tokens=1)
-        _warmed_up = True
-    finally:
-        try:
-            os.unlink(warmup_path)
-        except OSError:
-            pass
+    raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")
 
 
-def _safe_warm_up():
-    try:
-        warm_up()
-    except Exception as e:
-        print(f"Model warm-up skipped: {e}")
+def unload():
+    global _loaded_model_key
+    if _loaded_model_key is not None:
+        model = get_model(_loaded_model_key)
+        if model.backend == BACKEND_QWEN_MLX:
+            _qwen_backend().unload()
+    _loaded_model_key = None
+
+
+def delete_model(model_key: str):
+    from vvrite import model_store
+
+    if _loaded_model_key == get_model(model_key).key:
+        unload()
+    model_store.delete_model_dir(get_model(model_key).key)
 
 
 def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
-    """
-    Normalize audio via ffmpeg, then transcribe with Qwen3-ASR.
-    Cleans up temp files after processing.
-    """
     if prefs is None:
         prefs = Preferences()
-
-    from vvrite.locales import ASR_LANGUAGE_MAP
-
-    normalized_path = audio_utils.normalize(raw_wav_path)
-    try:
-        kwargs = {"max_tokens": prefs.max_tokens}
-        custom_words = prefs.custom_words.strip()
-        if custom_words:
-            kwargs["system_prompt"] = f"Use the following spellings: {custom_words}"
-
-        asr_lang = prefs.asr_language
-        if asr_lang != "auto":
-            language_param = ASR_LANGUAGE_MAP.get(asr_lang)
-            if language_param is None:
-                print(f"Unknown ASR language code: {asr_lang}, falling back to auto-detect")
-            else:
-                kwargs["language"] = language_param
-
-        result = _model.generate(
-            normalized_path,
-            **kwargs,
-        )
-        return result.text.strip()
-    finally:
-        for path in (raw_wav_path, normalized_path):
-            try:
-                os.unlink(path)
-            except OSError:
-                pass
+    model = _selected_model(prefs)
+    if model.backend == BACKEND_QWEN_MLX:
+        return _qwen_backend().transcribe(raw_wav_path, prefs)
+    raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")

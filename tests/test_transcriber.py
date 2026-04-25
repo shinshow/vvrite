@@ -1,71 +1,82 @@
-"""Tests for transcriber download/load split."""
+"""Tests for ASR transcriber router."""
+
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
-class TestGetModelSize(unittest.TestCase):
-    @patch("vvrite.transcriber.model_info")
-    def test_returns_size_in_bytes(self, mock_info):
-        sibling = MagicMock()
-        sibling.size = 600_000_000
-        mock_info.return_value = MagicMock(siblings=[sibling, sibling])
-
-        from vvrite.transcriber import get_model_size
-        size = get_model_size("mlx-community/Qwen3-ASR-1.7B-8bit")
-        self.assertEqual(size, 1_200_000_000)
-        mock_info.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit", files_metadata=True)
-
-    @patch("vvrite.transcriber.model_info")
-    def test_returns_zero_on_error(self, mock_info):
-        mock_info.side_effect = Exception("network error")
-
-        from vvrite.transcriber import get_model_size
-        size = get_model_size("mlx-community/Qwen3-ASR-1.7B-8bit")
-        self.assertEqual(size, 0)
+class _Prefs:
+    asr_model_key = "qwen3_asr_1_7b_8bit"
 
 
-class TestDownloadModel(unittest.TestCase):
-    @patch("vvrite.transcriber.snapshot_download")
-    def test_calls_snapshot_download(self, mock_dl):
-        mock_dl.return_value = "/fake/path"
-
-        from vvrite.transcriber import download_model
-        path = download_model("test-model")
-        self.assertEqual(path, "/fake/path")
-        mock_dl.assert_called_once_with(repo_id="test-model")
-
-
-class TestWarmUp(unittest.TestCase):
-    @patch("vvrite.transcriber.os.unlink")
-    @patch("vvrite.transcriber._create_warmup_audio", return_value="/tmp/warmup.wav")
-    def test_warm_up_runs_single_dummy_generate(self, mock_audio, mock_unlink):
+class TestTranscriberRouter(unittest.TestCase):
+    def test_importing_transcriber_does_not_load_qwen_backend(self):
         import vvrite.transcriber as transcriber
 
-        model = MagicMock()
-        old_model = transcriber._model
-        old_warmed_up = transcriber._warmed_up
-        try:
-            transcriber._model = model
-            transcriber._warmed_up = False
+        self.assertFalse(transcriber.is_model_loaded())
 
-            transcriber.warm_up()
+    @patch("vvrite.transcriber._qwen_backend")
+    def test_get_model_size_routes_to_qwen_backend(self, mock_qwen_backend):
+        backend = MagicMock()
+        backend.get_size.return_value = 1_200_000_000
+        mock_qwen_backend.return_value = backend
 
-            model.generate.assert_called_once_with("/tmp/warmup.wav", max_tokens=1)
-            mock_unlink.assert_called_once_with("/tmp/warmup.wav")
-            self.assertTrue(transcriber._warmed_up)
-        finally:
-            transcriber._model = old_model
-            transcriber._warmed_up = old_warmed_up
+        from vvrite.transcriber import get_model_size
 
-    @patch("vvrite.transcriber._safe_warm_up")
-    @patch("vvrite.transcriber.load_model", return_value=MagicMock())
-    def test_load_from_local_triggers_warm_up(self, mock_load_model, mock_safe_warm_up):
-        from vvrite.transcriber import load_from_local
+        size = get_model_size("qwen3_asr_1_7b_8bit")
 
-        load_from_local("/tmp/model")
+        self.assertEqual(size, 1_200_000_000)
+        backend.get_size.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
 
-        mock_load_model.assert_called_once_with("/tmp/model")
-        mock_safe_warm_up.assert_called_once_with()
+    @patch("vvrite.transcriber._qwen_backend")
+    def test_download_model_routes_to_qwen_backend(self, mock_qwen_backend):
+        backend = MagicMock()
+        backend.download.return_value = "/fake/path"
+        mock_qwen_backend.return_value = backend
+
+        from vvrite.transcriber import download_model
+
+        path = download_model("qwen3_asr_1_7b_8bit")
+
+        self.assertEqual(path, "/fake/path")
+        backend.download.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
+
+    @patch("vvrite.transcriber._qwen_backend")
+    def test_load_from_local_routes_to_selected_backend(self, mock_qwen_backend):
+        backend = MagicMock()
+        mock_qwen_backend.return_value = backend
+
+        from vvrite import transcriber
+
+        transcriber.load_from_local("/tmp/model", _Prefs())
+
+        backend.load_from_local.assert_called_once_with("/tmp/model")
+        self.assertTrue(transcriber.is_model_loaded())
+
+    @patch("vvrite.transcriber._qwen_backend")
+    def test_unload_releases_backend(self, mock_qwen_backend):
+        backend = MagicMock()
+        mock_qwen_backend.return_value = backend
+
+        from vvrite import transcriber
+
+        transcriber.load_from_local("/tmp/model", _Prefs())
+        transcriber.unload()
+
+        backend.unload.assert_called_once_with()
+        self.assertFalse(transcriber.is_model_loaded())
+
+    @patch("vvrite.transcriber._qwen_backend")
+    def test_transcribe_routes_to_qwen_backend(self, mock_qwen_backend):
+        backend = MagicMock()
+        backend.transcribe.return_value = "hello"
+        mock_qwen_backend.return_value = backend
+
+        from vvrite.transcriber import transcribe
+
+        result = transcribe("/tmp/audio.wav", _Prefs())
+
+        self.assertEqual(result, "hello")
+        backend.transcribe.assert_called_once()
 
 
 if __name__ == "__main__":
