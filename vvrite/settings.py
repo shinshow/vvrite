@@ -730,18 +730,164 @@ class SettingsWindowController(NSObject):
 
     def _build_general_panel(self):
         panel, y = self._new_panel()
-        label = NSTextField.labelWithString_(t("settings.categories.general"))
+
+        label = NSTextField.labelWithString_(t("settings.language.title"))
         label.setFrame_(NSMakeRect(20, y, SETTINGS_CONTENT_WIDTH - 40, 20))
         label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
         panel.addSubview_(label)
+
+        y -= 30
+        ui_lang_label = NSTextField.labelWithString_(t("settings.language.ui_language"))
+        ui_lang_label.setFrame_(NSMakeRect(20, y, 130, 20))
+        ui_lang_label.setAlignment_(2)
+        ui_lang_label.setTextColor_(NSColor.secondaryLabelColor())
+        ui_lang_label.setFont_(NSFont.systemFontOfSize_(12.0))
+        panel.addSubview_(ui_lang_label)
+
+        self._ui_lang_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(156, y, 260, 24), False
+        )
+        self._ui_lang_popup.addItemWithTitle_(t("common.system_default"))
+        for code, native_name in SUPPORTED_LANGUAGES:
+            self._ui_lang_popup.addItemWithTitle_(native_name)
+        current_ui = self._prefs.ui_language
+        if current_ui is None:
+            self._ui_lang_popup.selectItemAtIndex_(0)
+        else:
+            selected = 0
+            for i, (code, _) in enumerate(SUPPORTED_LANGUAGES):
+                if code == current_ui:
+                    selected = i + 1
+                    break
+            self._ui_lang_popup.selectItemAtIndex_(selected)
+        self._ui_lang_popup.setTarget_(self)
+        self._ui_lang_popup.setAction_("uiLanguageChanged:")
+        panel.addSubview_(self._ui_lang_popup)
+
+        y -= 30
+        asr_lang_label = NSTextField.labelWithString_(t("settings.language.asr_language"))
+        asr_lang_label.setFrame_(NSMakeRect(20, y, 130, 20))
+        asr_lang_label.setAlignment_(2)
+        asr_lang_label.setTextColor_(NSColor.secondaryLabelColor())
+        asr_lang_label.setFont_(NSFont.systemFontOfSize_(12.0))
+        panel.addSubview_(asr_lang_label)
+
+        self._asr_lang_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(156, y, 260, 24), False
+        )
+        self._asr_lang_popup.addItemWithTitle_(t("common.automatic"))
+        for code, native_name in SUPPORTED_LANGUAGES:
+            self._asr_lang_popup.addItemWithTitle_(native_name)
+        current_asr = self._prefs.asr_language
+        if current_asr == "auto":
+            self._asr_lang_popup.selectItemAtIndex_(0)
+        else:
+            selected = 0
+            for i, (code, _) in enumerate(SUPPORTED_LANGUAGES):
+                if code == current_asr:
+                    selected = i + 1
+                    break
+            self._asr_lang_popup.selectItemAtIndex_(selected)
+        self._asr_lang_popup.setTarget_(self)
+        self._asr_lang_popup.setAction_("asrLanguageChanged:")
+        panel.addSubview_(self._asr_lang_popup)
+
+        y -= 44
+        self._login_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(20, y, 360, 20)
+        )
+        self._login_checkbox.setButtonType_(NSButtonTypeSwitch)
+        self._login_checkbox.setTitle_(t("settings.login.title"))
+        self._login_checkbox.setState_(1 if self._prefs.launch_at_login else 0)
+        self._login_checkbox.setTarget_(self)
+        self._login_checkbox.setAction_("loginToggled:")
+        panel.addSubview_(self._login_checkbox)
+
+        y -= 30
+        update_checkbox = NSButton.alloc().initWithFrame_(
+            NSMakeRect(20, y, 360, 20)
+        )
+        update_checkbox.setButtonType_(NSButtonTypeSwitch)
+        update_checkbox.setTitle_(t("settings.update.title"))
+        update_checkbox.setState_(1 if self._prefs.auto_update_check else 0)
+        update_checkbox.setTarget_(self)
+        update_checkbox.setAction_("autoUpdateCheckToggled:")
+        panel.addSubview_(update_checkbox)
+
         return panel
 
     def _build_recording_panel(self):
         panel, y = self._new_panel()
-        label = NSTextField.labelWithString_(t("settings.categories.recording"))
+
+        label = NSTextField.labelWithString_(t("settings.shortcut.title"))
         label.setFrame_(NSMakeRect(20, y, SETTINGS_CONTENT_WIDTH - 40, 20))
         label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
         panel.addSubview_(label)
+
+        y -= 30
+        self._shortcut_field = ShortcutField.alloc().initWithFrame_preferences_(
+            NSMakeRect(20, y, 300, 24), self._prefs
+        )
+        self._shortcut_field._on_change = self._update_hotkey_display
+        panel.addSubview_(self._shortcut_field)
+
+        change_btn = NSButton.alloc().initWithFrame_(NSMakeRect(330, y, 80, 24))
+        change_btn.setTitle_(t("common.change"))
+        change_btn.setBezelStyle_(NSBezelStyleRounded)
+        change_btn.setTarget_(self)
+        change_btn.setAction_("changeShortcut:")
+        panel.addSubview_(change_btn)
+
+        y -= 44
+        label = NSTextField.labelWithString_(t("settings.microphone.title"))
+        label.setFrame_(NSMakeRect(20, y, SETTINGS_CONTENT_WIDTH - 40, 20))
+        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
+        panel.addSubview_(label)
+
+        y -= 30
+        self._mic_popup = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(20, y, 390, 24), False
+        )
+        self._populate_mics(refresh=True)
+        self._mic_popup.setTarget_(self)
+        self._mic_popup.setAction_("micChanged:")
+        panel.addSubview_(self._mic_popup)
+
+        y -= 44
+        label = NSTextField.labelWithString_(t("settings.permissions.title"))
+        label.setFrame_(NSMakeRect(20, y, SETTINGS_CONTENT_WIDTH - 40, 20))
+        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
+        panel.addSubview_(label)
+
+        y -= 26
+        self._acc_label = NSTextField.labelWithString_(
+            t("settings.permissions.accessibility_checking")
+        )
+        self._acc_label.setFrame_(NSMakeRect(20, y, 290, 20))
+        panel.addSubview_(self._acc_label)
+
+        acc_btn = NSButton.alloc().initWithFrame_(NSMakeRect(330, y, 80, 24))
+        acc_btn.setTitle_(t("common.open"))
+        acc_btn.setBezelStyle_(NSBezelStyleRounded)
+        acc_btn.setTarget_(self)
+        acc_btn.setAction_("openAccessibility:")
+        panel.addSubview_(acc_btn)
+
+        y -= 30
+        self._mic_label = NSTextField.labelWithString_(
+            t("settings.permissions.microphone_checking")
+        )
+        self._mic_label.setFrame_(NSMakeRect(20, y, 290, 20))
+        panel.addSubview_(self._mic_label)
+
+        mic_perm_btn = NSButton.alloc().initWithFrame_(NSMakeRect(330, y, 80, 24))
+        mic_perm_btn.setTitle_(t("common.open"))
+        mic_perm_btn.setBezelStyle_(NSBezelStyleRounded)
+        mic_perm_btn.setTarget_(self)
+        mic_perm_btn.setAction_("openMicrophonePrivacy:")
+        panel.addSubview_(mic_perm_btn)
+
+        self._update_permissions()
         return panel
 
     def _build_model_panel(self):
@@ -938,6 +1084,10 @@ class SettingsWindowController(NSObject):
     def retractShortcutToggled_(self, sender):
         self._prefs.retract_last_dictation_enabled = sender.state() == 1
         self._refresh_retract_controls()
+
+    @objc.typedSelector(b"v@:@")
+    def autoUpdateCheckToggled_(self, sender):
+        self._prefs.auto_update_check = sender.state() == 1
 
     @objc.typedSelector(b"v@:@")
     def micChanged_(self, sender):

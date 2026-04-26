@@ -486,6 +486,31 @@ class TestSettingsSidebarLayout(unittest.TestCase):
             controller._content_container
         )
 
+    @patch("vvrite.settings.list_input_devices", return_value=[])
+    def test_general_panel_builds_language_and_login_controls(self, _mock_devices):
+        from vvrite.preferences import Preferences
+
+        controller = SettingsWindowController.alloc().initWithPreferences_(Preferences())
+        controller._show_settings_category("general")
+
+        self.assertIsNotNone(controller._ui_lang_popup)
+        self.assertIsNotNone(controller._asr_lang_popup)
+        self.assertIsNotNone(controller._login_checkbox)
+
+    @patch("vvrite.settings.list_input_devices", return_value=[])
+    def test_recording_panel_builds_hotkey_microphone_and_permission_controls(
+        self, _mock_devices
+    ):
+        from vvrite.preferences import Preferences
+
+        controller = SettingsWindowController.alloc().initWithPreferences_(Preferences())
+        controller._show_settings_category("recording")
+
+        self.assertIsNotNone(controller._shortcut_field)
+        self.assertIsNotNone(controller._mic_popup)
+        self.assertIsNotNone(controller._acc_label)
+        self.assertIsNotNone(controller._mic_label)
+
 
 class TestModeSettingsActions(unittest.TestCase):
     def test_mode_changed_saves_selected_mode_key(self):
