@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 import os
 import subprocess
 import sys
@@ -314,16 +315,31 @@ def _fast_cli_args() -> list[str]:
     ]
 
 
-def _make_full_params(prefs):
+def _audio_context_for_samples(n_samples: int) -> int:
+    override = os.environ.get("VVRITE_WHISPER_AUDIO_CTX")
+    if override:
+        try:
+            return max(1, min(1500, int(override)))
+        except ValueError:
+            pass
+
+    duration_seconds = max(0.0, n_samples / 16000.0)
+    needed_frames = int(math.ceil(duration_seconds * 50.0)) + 64
+    return max(256, min(1500, needed_frames))
+
+
+def _make_full_params(prefs, n_samples: int):
     params = _lib.whisper_full_default_params(WHISPER_SAMPLING_GREEDY)
     params.n_threads = _thread_count()
     params.translate = prefs.output_mode == OUTPUT_MODE_TRANSLATE_TO_ENGLISH
     params.no_context = True
     params.no_timestamps = True
+    params.single_segment = True
     params.print_special = False
     params.print_progress = False
     params.print_realtime = False
     params.print_timestamps = False
+    params.audio_ctx = _audio_context_for_samples(n_samples)
     params.temperature = 0.0
     params.temperature_inc = 0.0
     params.greedy.best_of = 1
@@ -343,22 +359,54 @@ def _make_full_params(prefs):
     return params, keepalive
 
 
-def _read_samples(path: str) -> np.ndarray:
-    samples, _sample_rate = sf.read(path, dtype="float32")
+def _coerce_samples(samples: np.ndarray) -> np.ndarray:
     samples = np.asarray(samples, dtype=np.float32)
     if samples.ndim == 2:
         samples = samples.mean(axis=1, dtype=np.float32)
     return np.ascontiguousarray(samples, dtype=np.float32)
 
 
-def _transcribe_with_library(raw_wav_path: str, model, prefs) -> str:
-    normalized_path = audio_utils.normalize(raw_wav_path)
+def _read_samples(path: str) -> tuple[np.ndarray, int]:
+    samples, _sample_rate = sf.read(path, dtype="float32")
+    return _coerce_samples(samples), int(_sample_rate)
+
+
+def _resample_to_16khz(samples: np.ndarray, sample_rate: int) -> np.ndarray:
+    if sample_rate == 16000:
+        return samples
+
     try:
-        samples = _read_samples(normalized_path)
+        from scipy.signal import resample_poly
+
+        divisor = math.gcd(sample_rate, 16000)
+        resampled = resample_poly(samples, 16000 // divisor, sample_rate // divisor)
+    except Exception:
+        target_count = max(1, int(round(samples.size * 16000 / sample_rate)))
+        source_x = np.linspace(0.0, 1.0, samples.size, endpoint=False)
+        target_x = np.linspace(0.0, 1.0, target_count, endpoint=False)
+        resampled = np.interp(target_x, source_x, samples)
+
+    return np.ascontiguousarray(resampled, dtype=np.float32)
+
+
+def _read_transcription_samples(raw_wav_path: str) -> tuple[np.ndarray, str | None]:
+    try:
+        samples, sample_rate = _read_samples(raw_wav_path)
+        return _resample_to_16khz(samples, sample_rate), None
+    except Exception:
+        normalized_path = audio_utils.normalize(raw_wav_path)
+        normalized_samples, _normalized_rate = _read_samples(normalized_path)
+        return normalized_samples, normalized_path
+
+
+def _transcribe_with_library(raw_wav_path: str, model, prefs) -> str:
+    cleanup_path = None
+    try:
+        samples, cleanup_path = _read_transcription_samples(raw_wav_path)
         with _lock:
             if _ctx is None or _loaded_model_key != model.key:
                 load(model)
-            params, _keepalive = _make_full_params(prefs)
+            params, _keepalive = _make_full_params(prefs, int(samples.size))
             result = _lib.whisper_full(
                 _ctx,
                 params,
@@ -376,7 +424,9 @@ def _transcribe_with_library(raw_wav_path: str, model, prefs) -> str:
             )
             return _clean_output(text)
     finally:
-        for path in (raw_wav_path, normalized_path):
+        for path in (raw_wav_path, cleanup_path):
+            if path is None:
+                continue
             try:
                 os.unlink(path)
             except OSError:

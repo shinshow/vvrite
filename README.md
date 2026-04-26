@@ -69,7 +69,6 @@ Whisper small 4-bit MLX and Whisper large-v3-turbo 4-bit MLX add fast Whisper-fa
 ## Requirements
 
 - macOS 13+ on Apple Silicon (M1/M2/M3/M4)
-- `ffmpeg` installed when running from source
 - ~2.5 GB disk space for the default model, or ~3.2 GB if all selectable models are installed
 - Microphone permission
 - Accessibility permission (for global hotkey)
@@ -85,7 +84,6 @@ cd vvrite
 
 # Install dependencies
 pip install -r requirements.txt
-brew install ffmpeg
 
 # Run
 python -m vvrite
@@ -119,13 +117,13 @@ On first launch, the onboarding wizard will guide you through:
 | Component | Technology |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| Audio | sounddevice + ffmpeg |
 | ASR Models | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), [Whisper small 4-bit](https://huggingface.co/mlx-community/whisper-small-4bit), [Whisper large-v3-turbo 4-bit](https://huggingface.co/mlx-community/whisper-large-v3-turbo-4bit) |
 | Inference | [mlx-audio](https://github.com/ml-explore/mlx-audio) and [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) on Apple Silicon |
+| Audio | sounddevice + soundfile + scipy |
 | Packaging | PyInstaller |
 
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
 
-This application bundles [ffmpeg](https://ffmpeg.org/), which is licensed under the [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.html). The ffmpeg source code is available at https://ffmpeg.org/download.html. Whisper model weights are distributed through the [mlx-community](https://huggingface.co/mlx-community) Hugging Face organization. The Qwen3-ASR model remains Apache 2.0 licensed.
+Whisper model weights are distributed through the [mlx-community](https://huggingface.co/mlx-community) Hugging Face organization. The Qwen3-ASR model remains Apache 2.0 licensed.

@@ -10,6 +10,11 @@ class TestPyInstallerSpec(unittest.TestCase):
 
         self.assertIn('collect_submodules("vvrite.asr_backends")', spec)
 
+    def test_ffmpeg_is_not_bundled(self):
+        spec = pathlib.Path("vvrite.spec").read_text(encoding="utf-8")
+
+        self.assertNotIn("ffmpeg", spec.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -183,6 +183,48 @@ class TestWhisperCppBackend(unittest.TestCase):
         self.assertEqual(params.greedy.best_of, 1)
         self.assertEqual(params.beam_search.beam_size, 1)
         self.assertEqual(params.temperature_inc, 0.0)
+        self.assertTrue(params.single_segment)
+        self.assertEqual(params.audio_ctx, 256)
+
+    @patch("vvrite.asr_backends.whisper_cpp._lib")
+    def test_make_full_params_scales_audio_context_with_input_length(self, mock_lib):
+        mock_lib.whisper_full_default_params.side_effect = (
+            lambda _strategy: whisper_cpp._WhisperFullParams()
+        )
+
+        short_params, _ = whisper_cpp._make_full_params(_Prefs(), 16000 * 2)
+        long_params, _ = whisper_cpp._make_full_params(_Prefs(), 16000 * 30)
+
+        self.assertEqual(short_params.audio_ctx, 256)
+        self.assertEqual(long_params.audio_ctx, 1500)
+
+    @patch("vvrite.asr_backends.whisper_cpp.sf.read")
+    @patch("vvrite.audio_utils.normalize")
+    def test_read_samples_avoids_ffmpeg_when_input_is_already_16khz_mono_wav(
+        self, mock_normalize, mock_read
+    ):
+        samples = np.zeros(16000, dtype=np.float32)
+        mock_read.return_value = (samples, 16000)
+
+        result, cleanup_path = whisper_cpp._read_transcription_samples("/tmp/raw.wav")
+
+        self.assertIs(cleanup_path, None)
+        self.assertEqual(result.dtype, np.float32)
+        mock_normalize.assert_not_called()
+
+    @patch("vvrite.asr_backends.whisper_cpp.sf.read")
+    @patch("vvrite.audio_utils.normalize")
+    def test_read_samples_resamples_non_16khz_input_without_ffmpeg(
+        self, mock_normalize, mock_read
+    ):
+        mock_read.return_value = (np.zeros(48000, dtype=np.float32), 48000)
+
+        result, cleanup_path = whisper_cpp._read_transcription_samples("/tmp/raw.wav")
+
+        self.assertIs(cleanup_path, None)
+        self.assertEqual(result.shape, (16000,))
+        self.assertEqual(result.dtype, np.float32)
+        mock_normalize.assert_not_called()
 
 
 if __name__ == "__main__":

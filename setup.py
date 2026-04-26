@@ -34,6 +34,7 @@ OPTIONS = {
         "mlx_lm",
         "transformers",
         "tiktoken",
+        "scipy",
         "sounddevice",
         "soundfile",
         "numpy",

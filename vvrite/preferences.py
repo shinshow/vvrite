@@ -46,7 +46,6 @@ _PREFERENCE_KEYS = tuple(_DEFAULTS.keys()) + ("mic_device", "ui_language")
 SAMPLE_RATE = 16000
 CHANNELS = 1
 CLIPBOARD_RESTORE_DELAY = 0.2
-FFMPEG_ARGS = ["-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le"]
 
 
 class Preferences:

@@ -37,9 +37,7 @@ pyobjc_hiddenimports = (
 a = Analysis(
     ["vvrite/main.py"],
     pathex=[],
-    binaries=[
-        ("/opt/homebrew/bin/ffmpeg", "."),
-    ],
+    binaries=[],
     datas=[
         # soundfile needs libsndfile
         (os.path.join(site_packages, "_soundfile_data"), "_soundfile_data"),
@@ -89,6 +87,8 @@ a = Analysis(
         "huggingface_hub",
         "safetensors",
         "numpy",
+        "scipy",
+        "scipy.signal",
     ],
     hookspath=[],
     hooksconfig={},

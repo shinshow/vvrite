@@ -42,7 +42,7 @@ Key modules:
 - settings.py: Settings window controller
 - preferences.py: Preferences — thin wrapper around NSUserDefaults
 - clipboard.py: Clipboard write + Cmd-V paste + clipboard restore
-- audio_utils.py: FFmpeg-based audio normalization
+- audio_utils.py: Python-based audio normalization and resampling
 - widgets.py: Reusable UI components (ShortcutField for hotkey capture)
 
 Threading: Main thread = NSApplication run loop (UI). Model loading + transcription = background threads via threading.Thread. Results posted back via performSelectorOnMainThread.
@@ -51,7 +51,7 @@ State machine: Idle → Recording (hotkey down) → Transcribing (hotkey up) →
 
 ## Build & Distribution
 
-- vvrite.spec: PyInstaller build config (arm64, MLX Metal shaders, ffmpeg, PyObjC)
+- vvrite.spec: PyInstaller build config (arm64, MLX Metal shaders, PyObjC)
 - scripts/build.sh: Full pipeline (PyInstaller → codesign → notarize → staple)
 - entitlements.plist: macOS entitlements for hardened runtime
 - Version string: vvrite/__init__.__version__
