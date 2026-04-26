@@ -111,6 +111,10 @@ strings = {
             "import_title": "사용자 지정 단어 가져오기",
             "export_title": "사용자 지정 단어 내보내기",
         },
+        "replacements": {
+            "title": "자동 치환",
+            "hint": "한 줄에 하나씩 입력하세요. 예: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "소리",
             "start": "시작",

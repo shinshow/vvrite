@@ -111,6 +111,10 @@ strings = {
             "import_title": "استيراد الكلمات المخصصة",
             "export_title": "تصدير الكلمات المخصصة",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "الصوت",
             "start": "بدء",

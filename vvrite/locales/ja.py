@@ -111,6 +111,10 @@ strings = {
             "import_title": "カスタムワードを読み込み",
             "export_title": "カスタムワードを書き出し",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "サウンド",
             "start": "開始",

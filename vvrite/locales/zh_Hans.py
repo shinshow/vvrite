@@ -111,6 +111,10 @@ strings = {
             "import_title": "导入自定义词汇",
             "export_title": "导出自定义词汇",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "声音",
             "start": "开始",

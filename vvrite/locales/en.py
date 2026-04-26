@@ -111,6 +111,10 @@ strings = {
             "import_title": "Import custom words",
             "export_title": "Export custom words",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "Sound",
             "start": "Start",

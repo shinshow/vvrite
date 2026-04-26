@@ -74,6 +74,25 @@ class TestCustomWordsFileActions(unittest.TestCase):
         self.assertEqual(self.controller._prefs.custom_words, "vvrite, Qwen")
 
 
+class TestReplacementRulesSettings(unittest.TestCase):
+    def setUp(self):
+        self.controller = SettingsWindowController.alloc().init()
+        self.controller._prefs = MagicMock()
+        self.controller._replacement_rules_text_view = MagicMock()
+
+    def test_save_replacement_rules_normalizes_valid_lines(self):
+        self.controller._replacement_rules_text_view.string.return_value = (
+            "큐엔 -> Qwen\n브이라이트,vvrite\nbad"
+        )
+
+        self.controller._save_replacement_rules()
+
+        self.assertEqual(
+            self.controller._prefs.replacement_rules,
+            "큐엔 -> Qwen\n브이라이트 -> vvrite",
+        )
+
+
 class TestCustomSoundPanelResult(unittest.TestCase):
     def setUp(self):
         self.controller = SettingsWindowController.alloc().init()

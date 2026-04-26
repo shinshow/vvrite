@@ -51,3 +51,11 @@ def apply_replacements(text: str, rules: list[tuple[str, str]]) -> str:
             continue
         result = _pattern_for_source(source).sub(target, result)
     return result
+
+
+def format_replacements_text(text: str) -> str:
+    """Return normalized replacement rules, one source -> target rule per line."""
+    return "\n".join(
+        f"{source} -> {target}"
+        for source, target in parse_replacements_text(text)
+    )

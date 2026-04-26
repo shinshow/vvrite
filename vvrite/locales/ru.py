@@ -111,6 +111,10 @@ strings = {
             "import_title": "Импорт пользовательских слов",
             "export_title": "Экспорт пользовательских слов",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "Звук",
             "start": "Начало",

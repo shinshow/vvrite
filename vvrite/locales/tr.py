@@ -111,6 +111,10 @@ strings = {
             "import_title": "Özel kelimeleri içe aktar",
             "export_title": "Özel kelimeleri dışa aktar",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "Ses",
             "start": "Başlat",

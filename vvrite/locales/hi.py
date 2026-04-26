@@ -111,6 +111,10 @@ strings = {
             "import_title": "कस्टम शब्द आयात करें",
             "export_title": "कस्टम शब्द निर्यात करें",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "ध्वनि",
             "start": "शुरू",

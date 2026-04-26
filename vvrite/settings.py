@@ -52,9 +52,10 @@ from vvrite.audio_devices import (
 from vvrite.download_progress import format_progress
 from vvrite.locales import t, SUPPORTED_LANGUAGES
 from vvrite.preferences import Preferences
+from vvrite.text_replacements import format_replacements_text
 from vvrite.widgets import ShortcutField, format_shortcut
 
-SETTINGS_WINDOW_HEIGHT = 950
+SETTINGS_WINDOW_HEIGHT = 1060
 SETTINGS_START_Y = SETTINGS_WINDOW_HEIGHT - 14
 
 
@@ -98,6 +99,7 @@ class SettingsWindowController(NSObject):
         self._login_checkbox = None
         self._custom_words_field = None
         self._custom_words_text_view = None
+        self._replacement_rules_text_view = None
         self._start_sound_popup = None
         self._stop_sound_popup = None
         self._start_volume_slider = None
@@ -435,6 +437,38 @@ class SettingsWindowController(NSObject):
         hint.setTextColor_(NSColor.secondaryLabelColor())
         content.addSubview_(hint)
 
+        # --- Replacements ---
+        y -= 40
+        label = NSTextField.labelWithString_(t("settings.replacements.title"))
+        label.setFrame_(NSMakeRect(20, y, 360, 20))
+        label.setFont_(NSFont.boldSystemFontOfSize_(13.0))
+        content.addSubview_(label)
+
+        y -= 86
+        replacement_scroll = NSScrollView.alloc().initWithFrame_(
+            NSMakeRect(20, y, 360, 78)
+        )
+        replacement_scroll.setHasVerticalScroller_(True)
+        replacement_scroll.setAutohidesScrollers_(True)
+        replacement_scroll.setBorderType_(1)
+        self._replacement_rules_text_view = NSTextView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, 360, 78)
+        )
+        self._replacement_rules_text_view.setString_(
+            format_replacements_text(self._prefs.replacement_rules)
+        )
+        self._replacement_rules_text_view.setFont_(NSFont.systemFontOfSize_(12.0))
+        self._replacement_rules_text_view.setDelegate_(self)
+        replacement_scroll.setDocumentView_(self._replacement_rules_text_view)
+        content.addSubview_(replacement_scroll)
+
+        y -= 20
+        hint = NSTextField.labelWithString_(t("settings.replacements.hint"))
+        hint.setFrame_(NSMakeRect(20, y, 360, 16))
+        hint.setFont_(NSFont.systemFontOfSize_(11.0))
+        hint.setTextColor_(NSColor.secondaryLabelColor())
+        content.addSubview_(hint)
+
         # --- Sound ---
         y -= 40
         label = NSTextField.labelWithString_(t("settings.sound.title"))
@@ -665,6 +699,7 @@ class SettingsWindowController(NSObject):
 
     def windowWillClose_(self, notification):
         self._save_custom_words()
+        self._save_replacement_rules()
         if self._permission_timer:
             self._permission_timer.invalidate()
             self._permission_timer = None
@@ -688,6 +723,15 @@ class SettingsWindowController(NSObject):
             )
         elif self._custom_words_field is not None:
             self._custom_words_field.setStringValue_(value)
+
+    def _save_replacement_rules(self):
+        if self._replacement_rules_text_view is None:
+            return
+        value = format_replacements_text(
+            str(self._replacement_rules_text_view.string())
+        )
+        self._prefs.replacement_rules = value
+        self._replacement_rules_text_view.setString_(value)
 
     @objc.typedSelector(b"v@:@")
     def pollPermissions_(self, timer):
@@ -1028,6 +1072,8 @@ class SettingsWindowController(NSObject):
     def textDidEndEditing_(self, notification):
         if notification.object() == self._custom_words_text_view:
             self._save_custom_words()
+        if notification.object() == self._replacement_rules_text_view:
+            self._save_replacement_rules()
 
     @objc.typedSelector(b"v@:@")
     def importCustomWords_(self, sender):

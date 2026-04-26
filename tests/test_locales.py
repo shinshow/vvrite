@@ -248,6 +248,10 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
             "export_title",
         ]:
             self.assertIn(key, s["custom_words"], f"Missing settings.custom_words.{key}")
+        # replacements
+        self.assertIn("replacements", s)
+        for key in ["title", "hint"]:
+            self.assertIn(key, s["replacements"], f"Missing settings.replacements.{key}")
         # sound
         self.assertIn("sound", s)
         for key in ["title", "start", "stop", "custom", "hint", "choose_file"]:

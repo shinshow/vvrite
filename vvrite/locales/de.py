@@ -111,6 +111,10 @@ strings = {
             "import_title": "Benutzerdefinierte Wörter importieren",
             "export_title": "Benutzerdefinierte Wörter exportieren",
         },
+        "replacements": {
+            "title": "Replacements",
+            "hint": "One rule per line, for example: 큐엔 -> Qwen",
+        },
         "sound": {
             "title": "Ton",
             "start": "Start",
