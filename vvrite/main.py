@@ -239,16 +239,6 @@ class AppDelegate(NSObject):
             else:
                 self._stop_recording()
 
-    def startRecording(self):
-        with self._lock:
-            if not self._recording:
-                self._start_recording()
-
-    def stopRecording(self):
-        with self._lock:
-            if self._recording:
-                self._stop_recording()
-
     def _start_recording(self):
         self._recording = True
 

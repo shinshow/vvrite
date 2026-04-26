@@ -16,7 +16,6 @@ from Quartz import (
     kCGHeadInsertEventTap,
     kCGEventTapOptionDefault,
     kCGEventKeyDown,
-    kCGEventKeyUp,
     kCGEventTapDisabledByTimeout,
     kCGKeyboardEventKeycode,
     kCGKeyboardEventAutorepeat,
@@ -41,7 +40,6 @@ class HotkeyManager:
         self._delegate = delegate
         self._prefs = Preferences()
         self._tap = None
-        self._recording_hotkey_down = False
         self._setup_tap()
 
     def _setup_tap(self):
@@ -49,7 +47,7 @@ class HotkeyManager:
             kCGSessionEventTap,
             kCGHeadInsertEventTap,
             kCGEventTapOptionDefault,
-            CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp),
+            CGEventMaskBit(kCGEventKeyDown),
             self._callback,
             None,
         )
@@ -68,7 +66,7 @@ class HotkeyManager:
                 CGEventTapEnable(self._tap, True)
             return event
 
-        if event_type in (kCGEventKeyDown, kCGEventKeyUp):
+        if event_type == kCGEventKeyDown:
             keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
             flags = CGEventGetFlags(event)
 
@@ -78,32 +76,17 @@ class HotkeyManager:
             retract_keycode = self._prefs.retract_hotkey_keycode
             retract_mods = self._prefs.retract_hotkey_modifiers
 
-            if event_type == kCGEventKeyUp and keycode == target_keycode:
-                if self._recording_hotkey_down:
-                    self._recording_hotkey_down = False
-                    threading.Thread(
-                        target=self._delegate.stopRecording,
-                        daemon=True,
-                    ).start()
-                    return None
-
-            if (
-                event_type == kCGEventKeyDown
-                and keycode == target_keycode
-                and (flags & MODIFIER_MASK) == target_mods
-            ):
+            if keycode == target_keycode and (flags & MODIFIER_MASK) == target_mods:
                 if CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat):
                     return None
-                self._recording_hotkey_down = True
                 threading.Thread(
-                    target=self._delegate.startRecording,
+                    target=self._delegate.toggleRecording,
                     daemon=True,
                 ).start()
                 return None
 
             if (
-                event_type == kCGEventKeyDown
-                and retract_enabled
+                retract_enabled
                 and keycode == retract_keycode
                 and (flags & MODIFIER_MASK) == retract_mods
             ):
@@ -115,8 +98,7 @@ class HotkeyManager:
 
             # ESC (0x35) with no modifiers cancels recording
             if (
-                event_type == kCGEventKeyDown
-                and keycode == 0x35
+                keycode == 0x35
                 and (flags & MODIFIER_MASK) == 0
                 and self._delegate._recording
             ):

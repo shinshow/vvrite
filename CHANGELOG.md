@@ -4,6 +4,13 @@ All notable changes to this fork are documented here.
 
 ## Unreleased
 
+## [1.1.4] - 2026-04-26
+
+### Fixed
+
+- Restored the intended toggle hotkey behavior: first press starts recording and shows the recording UI, second press stops recording and starts transcription.
+- Bumped app version from `1.1.3` to `1.1.4`.
+
 ## [1.1.3] - 2026-04-26
 
 ### Changed
