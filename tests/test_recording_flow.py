@@ -22,21 +22,35 @@ class TestRecordingFlow(unittest.TestCase):
         delegate.performSelectorOnMainThread_withObject_waitUntilDone_ = MagicMock()
         return delegate
 
-    def test_start_recording_opens_microphone_before_ready_sound(self):
+    def test_start_recording_discards_ready_sound_before_showing_recording_ui(self):
         delegate = self._delegate()
         events = []
         delegate._recorder.start.side_effect = lambda **_kwargs: events.append(
             "recorder.start"
         )
+        delegate._recorder.discard_frames.side_effect = lambda: events.append(
+            "recorder.discard_frames"
+        )
+        delegate.performSelectorOnMainThread_withObject_waitUntilDone_.side_effect = (
+            lambda selector, *_args: events.append(selector)
+        )
 
         with patch.object(
             main.sounds,
-            "play",
+            "play_and_wait",
             side_effect=lambda *_args: events.append("sounds.play"),
         ):
             delegate._start_recording()
 
-        self.assertEqual(events, ["recorder.start", "sounds.play"])
+        self.assertEqual(
+            events,
+            [
+                "recorder.start",
+                "sounds.play",
+                "recorder.discard_frames",
+                "showRecordingUI:",
+            ],
+        )
 
     def test_stop_recording_closes_microphone_before_stop_sound(self):
         delegate = self._delegate()

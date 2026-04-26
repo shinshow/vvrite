@@ -4,6 +4,14 @@ All notable changes to this fork are documented here.
 
 ## Unreleased
 
+## [1.1.7] - 2026-04-26
+
+### Fixed
+
+- Prevented the start cue sound from being included in dictation audio by opening the microphone first, waiting for the cue, discarding captured cue frames, and only then showing the recording UI.
+- Reduced short-input hallucinations and clipped first utterances caused by cue audio contaminating the recorded speech boundary.
+- Bumped app version from `1.1.6` to `1.1.7`.
+
 ## [1.1.6] - 2026-04-26
 
 ### Fixed

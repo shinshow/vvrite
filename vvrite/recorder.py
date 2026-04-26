@@ -70,6 +70,10 @@ class Recorder:
             level = _compute_rms(indata)
             self._level_callback(level)
 
+    def discard_frames(self):
+        """Discard audio captured so far while keeping the stream open."""
+        self._frames = []
+
     def stop(self) -> str | None:
         """Stop recording and return path to the raw WAV file."""
         if self._stream is not None:

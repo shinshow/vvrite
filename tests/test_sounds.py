@@ -90,6 +90,24 @@ class TestPlay(unittest.TestCase):
 
         mock_copy.setVolume_.assert_called_once_with(1.0)
 
+    @patch("vvrite.sounds.time.sleep")
+    @patch("vvrite.sounds.NSSound")
+    def test_play_and_wait_waits_until_sound_finishes(self, mock_nssound, mock_sleep):
+        from vvrite.sounds import play_and_wait
+
+        mock_sound = MagicMock()
+        mock_copy = MagicMock()
+        mock_copy.isPlaying.side_effect = [True, False]
+        mock_sound.copy.return_value = mock_copy
+        mock_nssound.soundNamed_.return_value = mock_sound
+
+        play_and_wait("Glass", volume=0.5)
+
+        mock_copy.setVolume_.assert_called_once_with(0.5)
+        mock_copy.play.assert_called_once()
+        self.assertEqual(mock_copy.isPlaying.call_count, 2)
+        mock_sleep.assert_called_once_with(0.01)
+
 
 if __name__ == "__main__":
     unittest.main()

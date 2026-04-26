@@ -252,7 +252,8 @@ class AppDelegate(NSObject):
                 device=self._prefs.mic_device,
                 level_callback=level_cb,
             )
-            sounds.play(self._prefs.sound_start, self._prefs.start_volume)
+            sounds.play_and_wait(self._prefs.sound_start, self._prefs.start_volume)
+            self._recorder.discard_frames()
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
                 "showRecordingUI:", None, False
             )

@@ -1,6 +1,7 @@
 """System sound playback using NSSound."""
 
 import os
+import time
 
 from AppKit import NSSound
 
@@ -23,16 +24,38 @@ def list_system_sounds() -> list[str]:
     return sorted(names)
 
 
-def play(name: str, volume: float = 1.0):
-    """Play a sound by system name or file path, at the given volume (0.0-1.0)."""
+def _sound_for_name(name: str):
     if is_custom_path(name):
         sound = NSSound.alloc().initWithContentsOfFile_byReference_(name, True)
     else:
         shared = NSSound.soundNamed_(name)
         if shared is None:
-            return
+            return None
         sound = shared.copy()
+    return sound
+
+
+def play(name: str, volume: float = 1.0):
+    """Play a sound by system name or file path, at the given volume (0.0-1.0)."""
+    sound = _sound_for_name(name)
     if sound is None:
         return
     sound.setVolume_(volume)
     sound.play()
+
+
+def play_and_wait(name: str, volume: float = 1.0, max_wait: float = 1.5):
+    """Play a short cue and wait until it finishes or times out."""
+    sound = _sound_for_name(name)
+    if sound is None:
+        return
+    sound.setVolume_(volume)
+    sound.play()
+    deadline = time.monotonic() + max(0.0, float(max_wait))
+    while time.monotonic() < deadline:
+        try:
+            if not sound.isPlaying():
+                return
+        except Exception:
+            return
+        time.sleep(0.01)
