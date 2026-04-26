@@ -45,6 +45,7 @@ from vvrite.recorder import Recorder
 from vvrite.clipboard import paste_and_restore, retract_text
 from vvrite.file_transcription import prepare_transcription_input
 from vvrite.history_store import DictationRecord, HistoryStore, default_history_path
+from vvrite.modes import post_process_for_mode
 from vvrite.text_replacements import apply_replacements, parse_replacements_text
 
 
@@ -88,8 +89,9 @@ def _short_error_message(message: str, limit: int = 90) -> str:
 
 
 def _post_process_text(text: str, prefs: Preferences) -> str:
+    value = post_process_for_mode(getattr(prefs, "selected_mode_key", "voice"), text)
     rules = parse_replacements_text(getattr(prefs, "replacement_rules", ""))
-    return apply_replacements(text, rules).strip()
+    return apply_replacements(value, rules).strip()
 
 
 class AppDelegate(NSObject):

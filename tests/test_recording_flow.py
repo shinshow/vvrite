@@ -121,6 +121,18 @@ class TestRecordingFlow(unittest.TestCase):
         mock_paste.assert_called_once_with("Qwen 모델", async_restore=True)
         self.assertEqual(delegate._last_dictation_text, "Qwen 모델")
 
+    @patch("vvrite.main.paste_and_restore")
+    @patch("vvrite.main.transcriber.transcribe", return_value="hello\r\nworld")
+    def test_transcribe_and_paste_applies_selected_mode(
+        self, _mock_transcribe, mock_paste
+    ):
+        delegate = self._delegate()
+        delegate._prefs.selected_mode_key = "note"
+
+        delegate._transcribe_and_paste("/tmp/audio.wav")
+
+        mock_paste.assert_called_once_with("hello\nworld", async_restore=True)
+
     @patch("vvrite.main.HistoryStore")
     @patch("vvrite.main.time.time", return_value=123.0)
     @patch("vvrite.main.paste_and_restore")
