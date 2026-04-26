@@ -95,6 +95,16 @@ class TestPreferences(unittest.TestCase):
         prefs = Preferences()
         self.assertEqual(prefs.asr_model_key, "qwen3_asr_1_7b_8bit")
 
+    def test_has_saved_asr_model_selection_tracks_persisted_choice(self):
+        from vvrite.preferences import Preferences
+
+        prefs = Preferences()
+        self.assertFalse(prefs.has_saved_asr_model_selection())
+
+        prefs.asr_model_key = "whisper_large_v3_4bit"
+
+        self.assertTrue(prefs.has_saved_asr_model_selection())
+
     def test_default_output_mode(self):
         from vvrite.preferences import Preferences
         prefs = Preferences()

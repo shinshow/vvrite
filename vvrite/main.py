@@ -31,6 +31,7 @@ import ApplicationServices
 from vvrite import __version__, APP_BUNDLE_IDENTIFIER
 from vvrite.locales import t
 from vvrite.preferences import Preferences
+from vvrite.asr_models import model_short_name
 from vvrite.status_bar import StatusBarController
 from vvrite.hotkey import HotkeyManager
 from vvrite.overlay import OverlayController
@@ -110,10 +111,10 @@ class AppDelegate(NSObject):
         self._overlay = OverlayController.alloc().init()
 
         NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            0.0, self, "preloadSettings:", None, False
+            0.0, self, "finishLaunching:", None, False
         )
         NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            0.0, self, "finishLaunching:", None, False
+            1.0, self, "preloadSettings:", None, False
         )
 
     def _ensure_settings_window_controller(self):
@@ -123,6 +124,8 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def preloadSettings_(self, _timer):
+        if getattr(self, "_onboarding_wc", None) is not None:
+            return
         try:
             self._ensure_settings_window_controller()
         except Exception as e:
@@ -146,8 +149,12 @@ class AppDelegate(NSObject):
 
     def _onboarding_finished(self):
         """Called when onboarding wizard completes."""
+        self._onboarding_wc = None
         self._hotkey = HotkeyManager(self)
         self._status_bar.setStatus_("ready")
+        NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            0.5, self, "preloadSettings:", None, False
+        )
         NSLog("vvrite ready.")
 
     def _check_permissions(self):
@@ -345,6 +352,7 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def showRecordingUI_(self, _):
+        self._overlay.setModelName_(model_short_name(self._prefs.asr_model_key))
         self._overlay.showRecording()
         self._status_bar.setStatus_("recording")
         self._status_bar.setRecording_(True)
@@ -355,6 +363,7 @@ class AppDelegate(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def showTranscribingUI_(self, _):
+        self._overlay.setModelName_(model_short_name(self._prefs.asr_model_key))
         self._overlay.showTranscribing()
         self._status_bar.setStatus_("transcribing")
         self._status_bar.setRecording_(False)

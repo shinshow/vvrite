@@ -38,9 +38,10 @@ from Quartz import (
 )
 
 # Panel dimensions
-W = 220
-H = 44
-CY = H / 2  # vertical center
+W = 240
+H = 62
+CY = 22  # vertical center for the recording/transcribing row
+MODEL_LABEL_Y = 38
 
 # Recording layout: [dot 10] 8 [timer 44] 12 [bars 38]  = 112
 REC_W = 10 + 8 + 44 + 12 + 38  # 112
@@ -60,6 +61,7 @@ class OverlayController(NSObject):
         self._timer_label = None
         self._level_bars = []
         self._status_label = None
+        self._model_label = None
         self._spinner = None
         self._dot = None
         self._record_start_time = 0
@@ -103,6 +105,20 @@ class OverlayController(NSObject):
             NSColor.colorWithRed_green_blue_alpha_(0.0, 0.0, 0.0, 0.35).CGColor()
         )
         self._panel.contentView().addSubview_(effect)
+
+        self._model_label = NSTextField.labelWithString_("")
+        self._model_label.setFrame_(NSMakeRect(12, MODEL_LABEL_Y, W - 24, 16))
+        self._model_label.setFont_(NSFont.systemFontOfSize_(10.5))
+        self._model_label.setTextColor_(
+            NSColor.colorWithRed_green_blue_alpha_(1.0, 1.0, 1.0, 0.72)
+        )
+        self._model_label.setAlignment_(NSCenterTextAlignment)
+        self._model_label.setBezeled_(False)
+        self._model_label.setDrawsBackground_(False)
+        self._model_label.setEditable_(False)
+        self._model_label.setSelectable_(False)
+        self._model_label.setHidden_(True)
+        self._panel.contentView().addSubview_(self._model_label)
 
         # --- Recording elements (centered as a group) ---
         x = REC_X0
@@ -277,6 +293,7 @@ class OverlayController(NSObject):
             self._reposition_timer.invalidate()
             self._reposition_timer = None
         self._show_recording_elements(True)
+        self._model_label.setHidden_(False)
         self._status_label.setHidden_(True)
         self._spinner.setHidden_(True)
         self._spinner.stopAnimation_(None)
@@ -293,6 +310,7 @@ class OverlayController(NSObject):
             self._update_timer.invalidate()
             self._update_timer = None
         self._show_recording_elements(False)
+        self._model_label.setHidden_(False)
         self._status_label.setStringValue_(t("overlay.transcribing"))
         self._status_label.setTextColor_(NSColor.whiteColor())
         self._status_label.setHidden_(False)
@@ -312,6 +330,7 @@ class OverlayController(NSObject):
             self._reposition_timer.invalidate()
             self._reposition_timer = None
         self._show_recording_elements(False)
+        self._model_label.setHidden_(False)
         self._spinner.setHidden_(True)
         self._spinner.stopAnimation_(None)
         self._status_label.setStringValue_(str(message))
@@ -325,6 +344,10 @@ class OverlayController(NSObject):
         NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             3.0, self, "dismiss:", None, False
         )
+
+    @objc.typedSelector(b"v@:@")
+    def setModelName_(self, model_name):
+        self._model_label.setStringValue_(str(model_name or ""))
 
     @objc.typedSelector(b"v@:@")
     def updateDisplay_(self, timer):

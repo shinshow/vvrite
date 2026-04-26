@@ -101,6 +101,9 @@ class Preferences:
 
         return False
 
+    def has_saved_asr_model_selection(self) -> bool:
+        return self._has_persisted_value("asr_model_key")
+
     def _get(self, key):
         val = self._defaults.objectForKey_(key)
         if val is None:

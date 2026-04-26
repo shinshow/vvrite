@@ -4,6 +4,7 @@ import objc
 from AppKit import (
     NSObject,
     NSStatusBar,
+    NSSquareStatusItemLength,
     NSVariableStatusItemLength,
     NSMenu,
     NSMenuItem,
@@ -30,7 +31,7 @@ class StatusBarController(NSObject):
 
     def _setup(self):
         self._status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(
-            NSVariableStatusItemLength
+            NSSquareStatusItemLength
         )
         button = self._status_item.button()
         button.setImage_(self._sf_symbol("exclamationmark.triangle"))
@@ -98,9 +99,22 @@ class StatusBarController(NSObject):
         self._menu.addItem_(quit_item)
 
         self._status_item.setMenu_(self._menu)
+        self._prime_status_item_display()
+
+    def _prime_status_item_display(self):
+        if hasattr(self._status_item, "setVisible_"):
+            self._status_item.setVisible_(True)
+        button = self._status_item.button()
+        if hasattr(button, "setNeedsDisplay_"):
+            button.setNeedsDisplay_(True)
+        if hasattr(button, "displayIfNeeded"):
+            button.displayIfNeeded()
 
     def _sf_symbol(self, name):
-        return NSImage.imageWithSystemSymbolName_accessibilityDescription_(name, None)
+        image = NSImage.imageWithSystemSymbolName_accessibilityDescription_(name, None)
+        if image is not None and hasattr(image, "setTemplate_"):
+            image.setTemplate_(True)
+        return image
 
     def _update_icon(self, ready: bool):
         button = self._status_item.button()
@@ -122,8 +136,13 @@ class StatusBarController(NSObject):
         """Show download percentage on menu bar button. -1 to clear."""
         button = self._status_item.button()
         if percent < 0:
+            if hasattr(self._status_item, "setLength_"):
+                self._status_item.setLength_(NSSquareStatusItemLength)
             button.setTitle_("")
+            self._prime_status_item_display()
         else:
+            if hasattr(self._status_item, "setLength_"):
+                self._status_item.setLength_(NSVariableStatusItemLength)
             button.setTitle_(f"{percent}%")
 
     def setHotkeyDisplay_(self, hotkey_str: str):

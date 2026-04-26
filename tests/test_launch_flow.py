@@ -42,8 +42,8 @@ class TestLaunchFlow(unittest.TestCase):
         mock_is_model_cached.assert_not_called()
         mock_timer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_.assert_has_calls(
             [
-                call(0.0, delegate, "preloadSettings:", None, False),
                 call(0.0, delegate, "finishLaunching:", None, False),
+                call(1.0, delegate, "preloadSettings:", None, False),
             ]
         )
 
@@ -65,6 +65,20 @@ class TestLaunchFlow(unittest.TestCase):
         mock_settings_controller.alloc.return_value.initWithPreferences_.assert_called_once_with(
             delegate._prefs
         )
+
+    @patch("vvrite.main.SettingsWindowController")
+    def test_preload_settings_skips_while_onboarding_is_active(
+        self, mock_settings_controller
+    ):
+        delegate = main.AppDelegate.__new__(main.AppDelegate)
+        delegate._prefs = object()
+        delegate._settings_wc = None
+        delegate._onboarding_wc = object()
+
+        delegate.preloadSettings_(None)
+
+        self.assertIsNone(delegate._settings_wc)
+        mock_settings_controller.alloc.assert_not_called()
 
 
 if __name__ == "__main__":

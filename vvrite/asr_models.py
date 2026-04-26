@@ -15,6 +15,14 @@ MODEL_ALIASES = {
     "whisper_large_v3_turbo": "whisper_large_v3_turbo_4bit",
 }
 
+MODEL_SHORT_NAMES = {
+    "qwen3_asr_1_7b_8bit": "Qwen 8-bit",
+    "qwen3_asr_1_7b_bf16": "Qwen BF16",
+    "whisper_small_4bit": "Whisper small",
+    "whisper_large_v3_4bit": "Whisper large-v3",
+    "whisper_large_v3_turbo_4bit": "Whisper Turbo",
+}
+
 
 @dataclass(frozen=True)
 class AsrModel:
@@ -91,6 +99,11 @@ ASR_MODELS = {
 def get_model(key: str | None) -> AsrModel:
     canonical_key = MODEL_ALIASES.get(key or "", key or "")
     return ASR_MODELS.get(canonical_key, ASR_MODELS[DEFAULT_ASR_MODEL_KEY])
+
+
+def model_short_name(key: str | None) -> str:
+    model = get_model(key)
+    return MODEL_SHORT_NAMES.get(model.key, model.display_name)
 
 
 def is_output_mode_supported(model_key: str, output_mode: str) -> bool:

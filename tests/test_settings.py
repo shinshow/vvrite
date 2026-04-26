@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from vvrite.audio_devices import AudioInputDevice
-from vvrite.settings import SettingsWindowController
+from vvrite.settings import SETTINGS_WINDOW_HEIGHT, SettingsWindowController
 
 
 class TestCustomSoundPanelResult(unittest.TestCase):
@@ -169,6 +169,8 @@ class TestAsrModelSettingsActions(unittest.TestCase):
         self.controller._model_downloading = False
         self.controller._download_progress_bar = None
         self.controller._download_progress_label = None
+        self.controller._model_capability_label = MagicMock()
+        self.controller._model_mode_notice = None
         self.translation_item = MagicMock()
         self.controller._output_mode_popup.itemAtIndex_.return_value = self.translation_item
         self.is_cached_patcher = patch(
@@ -176,6 +178,51 @@ class TestAsrModelSettingsActions(unittest.TestCase):
         )
         self.is_cached_patcher.start()
         self.addCleanup(self.is_cached_patcher.stop)
+
+    def test_sync_model_controls_reflects_current_preferences_after_preload(self):
+        from vvrite.asr_models import ASR_MODELS
+
+        self.controller._prefs.asr_model_key = "whisper_large_v3_4bit"
+        self.controller._prefs.output_mode = "transcribe"
+        self.controller._model_popup = MagicMock()
+        self.controller._refresh_model_controls = MagicMock()
+
+        self.controller._sync_model_controls_from_preferences()
+
+        self.controller._model_popup.selectItemAtIndex_.assert_called_once_with(
+            list(ASR_MODELS).index("whisper_large_v3_4bit")
+        )
+        self.controller._refresh_model_controls.assert_called_once_with()
+
+    @patch("vvrite.settings.transcriber.is_model_cached")
+    def test_adopts_single_downloaded_model_when_user_has_no_saved_selection(
+        self, mock_is_cached
+    ):
+        def cached_only_large_v3(model_key):
+            return model_key == "whisper_large_v3_4bit"
+
+        self.controller._prefs.has_saved_asr_model_selection.return_value = False
+        self.controller._prefs.asr_model_key = "qwen3_asr_1_7b_8bit"
+        mock_is_cached.side_effect = cached_only_large_v3
+
+        self.controller._adopt_single_downloaded_model_if_unset()
+
+        self.assertEqual(self.controller._prefs.asr_model_key, "whisper_large_v3_4bit")
+
+    @patch("vvrite.settings.transcriber.is_model_cached")
+    def test_does_not_guess_model_when_multiple_downloaded_models_exist(
+        self, mock_is_cached
+    ):
+        self.controller._prefs.has_saved_asr_model_selection.return_value = False
+        self.controller._prefs.asr_model_key = "qwen3_asr_1_7b_8bit"
+        mock_is_cached.side_effect = lambda model_key: model_key in {
+            "qwen3_asr_1_7b_8bit",
+            "whisper_large_v3_4bit",
+        }
+
+        self.controller._adopt_single_downloaded_model_if_unset()
+
+        self.assertEqual(self.controller._prefs.asr_model_key, "qwen3_asr_1_7b_8bit")
 
     @patch("vvrite.settings.threading.Thread")
     def test_asr_model_changed_updates_pref_resets_translation_and_prepares_model(
@@ -211,6 +258,39 @@ class TestAsrModelSettingsActions(unittest.TestCase):
         )
         self.assertTrue(mock_thread.call_args.kwargs["daemon"])
         mock_thread.return_value.start.assert_called_once_with()
+        self.assertEqual(
+            self.controller._model_mode_notice,
+            "settings.model.translation_switched_to_transcribe",
+        )
+
+    def test_refresh_model_controls_explains_translation_support(self):
+        self.controller._prefs.asr_model_key = "whisper_large_v3_4bit"
+
+        with patch("vvrite.settings.NSColor") as mock_color:
+            mock_color.systemBlueColor.return_value = "blue"
+            self.controller._refresh_model_controls()
+
+        self.translation_item.setEnabled_.assert_called_with(True)
+        self.controller._model_capability_label.setStringValue_.assert_called_with(
+            "Supports transcription and English translation."
+        )
+        self.controller._model_capability_label.setTextColor_.assert_called_with("blue")
+
+    def test_refresh_model_controls_explains_transcription_only_models(self):
+        self.controller._prefs.asr_model_key = "qwen3_asr_1_7b_bf16"
+
+        with patch("vvrite.settings.NSColor") as mock_color:
+            mock_color.systemOrangeColor.return_value = "orange"
+            self.controller._refresh_model_controls()
+
+        self.translation_item.setEnabled_.assert_called_with(False)
+        self.controller._model_capability_label.setStringValue_.assert_called_with(
+            "Transcription only. English translation is unavailable for this model."
+        )
+        self.controller._model_capability_label.setTextColor_.assert_called_with("orange")
+
+    def test_settings_window_height_leaves_room_for_model_capability_hint(self):
+        self.assertGreaterEqual(SETTINGS_WINDOW_HEIGHT, 880)
 
     @patch("vvrite.settings.transcriber.prepare_model")
     def test_prepare_selected_model_downloads_missing_model_and_refreshes_state(
@@ -251,6 +331,10 @@ class TestAsrModelSettingsActions(unittest.TestCase):
 
         self.assertEqual(self.controller._prefs.output_mode, "transcribe")
         sender.selectItemAtIndex_.assert_called_once_with(0)
+        self.assertEqual(
+            self.controller._model_mode_notice,
+            "settings.model.translation_switched_to_transcribe",
+        )
         self.translation_item.setEnabled_.assert_called_once_with(False)
 
     def test_output_mode_changed_accepts_small_whisper_translation(self):

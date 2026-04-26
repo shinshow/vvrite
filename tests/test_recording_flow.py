@@ -16,8 +16,11 @@ class TestRecordingFlow(unittest.TestCase):
             sound_stop="Purr",
             stop_volume=1.0,
             mic_device=None,
+            asr_model_key="qwen3_asr_1_7b_bf16",
         )
         delegate._recorder = MagicMock()
+        delegate._overlay = MagicMock()
+        delegate._status_bar = MagicMock()
         delegate._recording = False
         delegate._last_dictation_text = None
         delegate.performSelectorOnMainThread_withObject_waitUntilDone_ = MagicMock()
@@ -60,6 +63,22 @@ class TestRecordingFlow(unittest.TestCase):
             delegate._start_recording()
 
         mock_play.assert_called_once_with("Glass", 1.0, max_wait=0.35)
+
+    def test_recording_overlay_shows_current_model(self):
+        delegate = self._delegate()
+
+        delegate.showRecordingUI_(None)
+
+        delegate._overlay.setModelName_.assert_called_once_with("Qwen BF16")
+        delegate._overlay.showRecording.assert_called_once_with()
+
+    def test_transcribing_overlay_keeps_current_model_visible(self):
+        delegate = self._delegate()
+
+        delegate.showTranscribingUI_(None)
+
+        delegate._overlay.setModelName_.assert_called_once_with("Qwen BF16")
+        delegate._overlay.showTranscribing.assert_called_once_with()
 
     def test_stop_recording_closes_microphone_before_stop_sound(self):
         delegate = self._delegate()

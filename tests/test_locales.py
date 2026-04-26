@@ -229,6 +229,9 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
             "download_failed",
             "delete_current_model_blocked",
             "translation_unsupported",
+            "translation_supported",
+            "translation_unavailable",
+            "translation_switched_to_transcribe",
             "mode_transcribe",
             "mode_translate_to_english",
         ]:
@@ -256,17 +259,15 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
         self.assertIn("update", s)
         self.assertIn("title", s["update"])
 
-    def test_translation_warning_names_supported_model(self):
+    def test_translation_warning_describes_selected_model_limitation(self):
         from vvrite.locales.en import strings
 
         self.assertIn(
-            "Whisper small 4-bit MLX",
+            "Selected model",
             strings["settings"]["model"]["translation_unsupported"],
         )
-        self.assertNotIn(
-            "Whisper large-v3.",
-            strings["settings"]["model"]["translation_unsupported"],
-        )
+        self.assertIn("English translation", strings["settings"]["model"]["translation_unavailable"])
+        self.assertIn("Switched to transcription", strings["settings"]["model"]["translation_switched_to_transcribe"])
 
     def test_menu_keys(self):
         from vvrite.locales.en import strings

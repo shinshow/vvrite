@@ -50,6 +50,9 @@ from vvrite.locales import t, SUPPORTED_LANGUAGES
 from vvrite.preferences import Preferences
 from vvrite.widgets import ShortcutField, format_shortcut
 
+SETTINGS_WINDOW_HEIGHT = 880
+SETTINGS_START_Y = SETTINGS_WINDOW_HEIGHT - 14
+
 
 class SettingsWindowController(NSObject):
     def initWithPreferences_(self, prefs):
@@ -80,6 +83,8 @@ class SettingsWindowController(NSObject):
         self._model_popup = None
         self._output_mode_popup = None
         self._model_status_label = None
+        self._model_capability_label = None
+        self._model_mode_notice = None
         self._download_model_btn = None
         self._delete_model_btn = None
         self._download_progress_bar = None
@@ -90,7 +95,7 @@ class SettingsWindowController(NSObject):
         return self
 
     def _build_window(self):
-        frame = NSMakeRect(0, 0, 400, 850)
+        frame = NSMakeRect(0, 0, 400, SETTINGS_WINDOW_HEIGHT)
         self._window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             frame,
             NSWindowStyleMaskTitled | NSWindowStyleMaskClosable,
@@ -103,7 +108,7 @@ class SettingsWindowController(NSObject):
         self._window.setDelegate_(self)
 
         content = self._window.contentView()
-        y = 836
+        y = SETTINGS_START_Y
 
         # --- Language ---
         y -= 30
@@ -302,6 +307,13 @@ class SettingsWindowController(NSObject):
         self._output_mode_popup.setTarget_(self)
         self._output_mode_popup.setAction_("outputModeChanged:")
         content.addSubview_(self._output_mode_popup)
+
+        y -= 22
+        self._model_capability_label = NSTextField.labelWithString_("")
+        self._model_capability_label.setFrame_(NSMakeRect(20, y, 360, 18))
+        self._model_capability_label.setTextColor_(NSColor.systemOrangeColor())
+        self._model_capability_label.setFont_(NSFont.systemFontOfSize_(11.0))
+        content.addSubview_(self._model_capability_label)
 
         y -= 30
         self._model_status_label = NSTextField.labelWithString_("")
@@ -587,6 +599,8 @@ class SettingsWindowController(NSObject):
         self._mic_label.setStringValue_(t("settings.permissions.microphone_granted"))
 
     def showWindow_(self, sender):
+        self._adopt_single_downloaded_model_if_unset()
+        self._sync_model_controls_from_preferences()
         self._populate_mics(refresh=True)
         self._populate_sounds()
         self._window.makeKeyAndOrderFront_(sender)
@@ -691,8 +705,11 @@ class SettingsWindowController(NSObject):
         self._prefs.asr_model_key = model.key
         if not is_output_mode_supported(model.key, self._prefs.output_mode):
             self._prefs.output_mode = OUTPUT_MODE_TRANSCRIBE
+            self._model_mode_notice = "settings.model.translation_switched_to_transcribe"
             if self._output_mode_popup is not None:
                 self._output_mode_popup.selectItemAtIndex_(0)
+        else:
+            self._model_mode_notice = None
         if old_key != model.key:
             self._begin_model_prepare(model.key)
         else:
@@ -708,8 +725,10 @@ class SettingsWindowController(NSObject):
         )
         if is_output_mode_supported(self._prefs.asr_model_key, requested):
             self._prefs.output_mode = requested
+            self._model_mode_notice = None
         else:
             self._prefs.output_mode = OUTPUT_MODE_TRANSCRIBE
+            self._model_mode_notice = "settings.model.translation_switched_to_transcribe"
             sender.selectItemAtIndex_(0)
         self._refresh_model_controls()
 
@@ -723,12 +742,29 @@ class SettingsWindowController(NSObject):
         output_mode_popup = getattr(self, "_output_mode_popup", None)
         model_popup = getattr(self, "_model_popup", None)
         model_status_label = getattr(self, "_model_status_label", None)
+        model_capability_label = getattr(self, "_model_capability_label", None)
         download_model_btn = getattr(self, "_download_model_btn", None)
         delete_model_btn = getattr(self, "_delete_model_btn", None)
         model_downloading = getattr(self, "_model_downloading", False)
 
         if output_mode_popup is not None:
             output_mode_popup.itemAtIndex_(1).setEnabled_(translation_supported)
+        if model_capability_label is not None:
+            capability_key = (
+                self._model_mode_notice
+                or (
+                    "settings.model.translation_supported"
+                    if translation_supported
+                    else "settings.model.translation_unavailable"
+                )
+            )
+            model_capability_label.setStringValue_(t(capability_key))
+            capability_color = (
+                NSColor.systemBlueColor()
+                if translation_supported and self._model_mode_notice is None
+                else NSColor.systemOrangeColor()
+            )
+            model_capability_label.setTextColor_(capability_color)
         if model_status_label is not None:
             status = (
                 t("settings.model.downloaded")
@@ -746,6 +782,44 @@ class SettingsWindowController(NSObject):
             )
         if delete_model_btn is not None:
             delete_model_btn.setEnabled_(downloaded and (not model_downloading))
+
+    def _model_index(self, model_key: str) -> int:
+        current_model = get_model(model_key)
+        for index, model in enumerate(ASR_MODELS.values()):
+            if model.key == current_model.key:
+                return index
+        return 0
+
+    def _sync_model_controls_from_preferences(self):
+        model_popup = getattr(self, "_model_popup", None)
+        output_mode_popup = getattr(self, "_output_mode_popup", None)
+        if model_popup is not None:
+            model_popup.selectItemAtIndex_(self._model_index(self._prefs.asr_model_key))
+        if output_mode_popup is not None:
+            output_mode_popup.selectItemAtIndex_(
+                1
+                if self._prefs.output_mode == OUTPUT_MODE_TRANSLATE_TO_ENGLISH
+                else 0
+            )
+        self._model_mode_notice = None
+        self._refresh_model_controls()
+
+    def _adopt_single_downloaded_model_if_unset(self):
+        has_saved_selection = getattr(
+            self._prefs,
+            "has_saved_asr_model_selection",
+            None,
+        )
+        if has_saved_selection is None or has_saved_selection():
+            return
+
+        downloaded_models = [
+            model
+            for model in ASR_MODELS.values()
+            if transcriber.is_model_cached(model.key)
+        ]
+        if len(downloaded_models) == 1:
+            self._prefs.asr_model_key = downloaded_models[0].key
 
     @objc.typedSelector(b"v@:@")
     def downloadSelectedModel_(self, sender):
