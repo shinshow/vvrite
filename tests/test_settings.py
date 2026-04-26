@@ -555,6 +555,28 @@ class TestSettingsSidebarLayout(unittest.TestCase):
         self.assertIsNotNone(controller._retract_shortcut_field)
         self.assertIsNotNone(controller._retract_change_btn)
 
+    @patch("vvrite.settings.NSTimer")
+    @patch("vvrite.settings.NSApp")
+    def test_show_window_keeps_current_category_and_refreshes_shared_state(
+        self, mock_app, _mock_timer
+    ):
+        controller = SettingsWindowController.alloc().init()
+        controller._window = MagicMock()
+        controller._adopt_single_downloaded_model_if_unset = MagicMock()
+        controller._sync_model_controls_from_preferences = MagicMock()
+        controller._populate_mics = MagicMock()
+        controller._populate_sounds = MagicMock()
+        controller._show_settings_category = MagicMock()
+        controller._selected_category_key = "sound"
+
+        controller.showWindow_(None)
+
+        controller._show_settings_category.assert_called_once_with("sound")
+        controller._populate_mics.assert_called_once_with(refresh=True)
+        controller._populate_sounds.assert_called_once_with()
+        controller._window.makeKeyAndOrderFront_.assert_called_once_with(None)
+        mock_app.activateIgnoringOtherApps_.assert_called_once_with(True)
+
 
 class TestModeSettingsActions(unittest.TestCase):
     def test_mode_changed_saves_selected_mode_key(self):
