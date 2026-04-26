@@ -17,12 +17,14 @@ class TestAsrModels(unittest.TestCase):
         self.assertEqual(DEFAULT_ASR_MODEL_KEY, "qwen3_asr_1_7b_8bit")
         self.assertEqual(get_model(DEFAULT_ASR_MODEL_KEY).backend, "qwen_mlx")
 
-    def test_contains_three_selectable_models(self):
+    def test_contains_accuracy_first_model_options(self):
         self.assertEqual(
             set(ASR_MODELS),
             {
                 "qwen3_asr_1_7b_8bit",
+                "qwen3_asr_1_7b_bf16",
                 "whisper_small_4bit",
+                "whisper_large_v3_4bit",
                 "whisper_large_v3_turbo_4bit",
             },
         )
@@ -42,7 +44,19 @@ class TestAsrModels(unittest.TestCase):
         )
         self.assertFalse(
             is_output_mode_supported(
+                "qwen3_asr_1_7b_bf16", OUTPUT_MODE_TRANSLATE_TO_ENGLISH
+            )
+        )
+        self.assertFalse(
+            is_output_mode_supported(
                 "whisper_large_v3_turbo_4bit", OUTPUT_MODE_TRANSLATE_TO_ENGLISH
+            )
+        )
+
+    def test_whisper_large_v3_supports_translation(self):
+        self.assertTrue(
+            is_output_mode_supported(
+                "whisper_large_v3_4bit", OUTPUT_MODE_TRANSLATE_TO_ENGLISH
             )
         )
 

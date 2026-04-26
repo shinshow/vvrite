@@ -116,7 +116,7 @@ class TestMicrophoneDeviceRefresh(unittest.TestCase):
         mock_list_input_devices.assert_called_once_with(refresh=True)
 
     @patch("vvrite.settings.list_input_devices")
-    def test_poll_permissions_repopulates_mics_with_portaudio_refresh(
+    def test_poll_permissions_repopulates_mics_without_portaudio_refresh(
         self, mock_list_input_devices
     ):
         device = AudioInputDevice(
@@ -133,7 +133,7 @@ class TestMicrophoneDeviceRefresh(unittest.TestCase):
 
         self.controller.pollPermissions_(MagicMock())
 
-        mock_list_input_devices.assert_called_once_with(refresh=True)
+        mock_list_input_devices.assert_called_once_with(refresh=False)
         self.controller._populate_mics.assert_called_once_with(devices=[device])
 
     def test_show_window_refreshes_portaudio_device_list(self):
@@ -184,7 +184,11 @@ class TestAsrModelSettingsActions(unittest.TestCase):
         self.controller._prefs.asr_model_key = "whisper_large_v3"
         self.controller._prefs.output_mode = "translate_to_english"
         sender = MagicMock()
-        sender.indexOfSelectedItem.return_value = 2  # Whisper large-v3-turbo 4-bit MLX
+        from vvrite.asr_models import ASR_MODELS
+
+        sender.indexOfSelectedItem.return_value = list(ASR_MODELS).index(
+            "whisper_large_v3_turbo_4bit"
+        )
 
         self.controller.asrModelChanged_(sender)
 

@@ -58,7 +58,7 @@ def _model_from(value=None):
 
 def _is_model_cached(model) -> bool:
     if model.backend == BACKEND_QWEN_MLX:
-        return _qwen_backend().is_cached(model.model_id)
+        return _qwen_backend().is_cached(model)
     if model.backend == BACKEND_WHISPER_CPP:
         return _whisper_backend().is_cached(model)
     if model.backend == BACKEND_WHISPER_MLX:
@@ -97,7 +97,7 @@ def _load_model(model):
     global _loaded_model_key
     print(f"Loading model: {model.display_name} ({model.model_id}) ...")
     if model.backend == BACKEND_QWEN_MLX:
-        _qwen_backend().load(model.model_id)
+        _qwen_backend().load(model)
         _loaded_model_key = model.key
         print("Model loaded.")
         return
@@ -149,7 +149,7 @@ def is_model_cached(model_id_or_key: str) -> bool:
 def get_model_size(model_id_or_key: str) -> int:
     model = get_model(model_id_or_key)
     if model.backend == BACKEND_QWEN_MLX:
-        return _qwen_backend().get_size(model.model_id)
+        return _qwen_backend().get_size(model)
     if model.backend == BACKEND_WHISPER_CPP:
         return _whisper_backend().get_size(model)
     if model.backend == BACKEND_WHISPER_MLX:
@@ -161,7 +161,7 @@ def download_model(model_id_or_key: str, progress_callback=None) -> str:
     model = get_model(model_id_or_key)
     if model.backend == BACKEND_QWEN_MLX:
         return _qwen_backend().download(
-            model.model_id,
+            model,
             progress_callback=progress_callback,
         )
     if model.backend == BACKEND_WHISPER_CPP:

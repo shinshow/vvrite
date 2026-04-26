@@ -16,6 +16,7 @@ from vvrite import audio_utils, model_store
 from vvrite.asr_language import resolve_asr_language
 from vvrite.locales import ASR_LANGUAGE_MAP
 from vvrite.preferences import SAMPLE_RATE
+from vvrite.asr_prompts import transcription_prompt
 
 _MODEL_KEY = "qwen3_asr_1_7b_8bit"
 _model = None
@@ -113,32 +114,44 @@ def _clear_mlx_cache():
         pass
 
 
-def is_cached(model_id: str) -> bool:
-    local_dir = model_store.model_dir(_MODEL_KEY)
+def _model_key(model) -> str:
+    return getattr(model, "key", _MODEL_KEY)
+
+
+def _model_id(model) -> str:
+    return getattr(model, "model_id", model)
+
+
+def is_cached(model) -> bool:
+    local_dir = model_store.model_dir(_model_key(model))
     try:
-        snapshot_download(repo_id=model_id, local_dir=local_dir, local_files_only=True)
+        snapshot_download(
+            repo_id=_model_id(model),
+            local_dir=local_dir,
+            local_files_only=True,
+        )
         return True
     except Exception:
         return False
 
 
-def get_size(model_id: str) -> int:
+def get_size(model) -> int:
     try:
-        info = model_info(model_id, files_metadata=True)
+        info = model_info(_model_id(model), files_metadata=True)
         return sum(s.size for s in info.siblings if s.size)
     except Exception:
         return 0
 
 
-def download(model_id: str, progress_callback=None) -> str:
-    local_dir = model_store.model_dir(_MODEL_KEY)
-    total = get_size(model_id) if progress_callback is not None else 0
+def download(model, progress_callback=None) -> str:
+    local_dir = model_store.model_dir(_model_key(model))
+    total = get_size(model) if progress_callback is not None else 0
     if progress_callback is not None:
         progress_callback(0, total)
         _ProgressTqdm.configure(progress_callback, total)
     try:
         kwargs = {
-            "repo_id": model_id,
+            "repo_id": _model_id(model),
             "local_dir": local_dir,
         }
         if progress_callback is not None:
@@ -164,8 +177,8 @@ def _load_from_local_impl(local_path: str):
     safe_warm_up()
 
 
-def load(model_id: str):
-    load_from_local(model_store.model_dir(_MODEL_KEY))
+def load(model):
+    load_from_local(model_store.model_dir(_model_key(model)))
 
 
 def _create_warmup_audio() -> str:
@@ -210,8 +223,7 @@ def _transcribe_impl(raw_wav_path: str, prefs) -> str:
     try:
         kwargs = {"max_tokens": prefs.max_tokens}
         custom_words = prefs.custom_words.strip()
-        if custom_words:
-            kwargs["system_prompt"] = f"Use the following spellings: {custom_words}"
+        kwargs["system_prompt"] = transcription_prompt(custom_words)
 
         asr_lang = resolve_asr_language(prefs)
         if asr_lang != "auto":

@@ -178,6 +178,7 @@ class TestWhisperMlxBackend(unittest.TestCase):
         self.assertTrue(kwargs["without_timestamps"])
         self.assertEqual(kwargs["task"], "transcribe")
         self.assertNotIn("language", kwargs)
+        self.assertIn("Do not translate", kwargs["initial_prompt"])
         mock_resolve_language.assert_called()
 
     def test_unload_clears_mlx_whisper_model_holder_cache(self):
@@ -213,7 +214,8 @@ class TestWhisperMlxBackend(unittest.TestCase):
 
         kwargs = fake_mlx_whisper.transcribe.call_args.kwargs
         self.assertEqual(kwargs["language"], "ko")
-        self.assertEqual(kwargs["initial_prompt"], "vvrite, Qwen")
+        self.assertIn("Do not translate", kwargs["initial_prompt"])
+        self.assertIn("vvrite, Qwen", kwargs["initial_prompt"])
 
     @patch("vvrite.asr_backends.whisper_mlx.resolve_asr_language", return_value="auto")
     def test_transcribe_kwargs_omits_language_for_auto_detection(

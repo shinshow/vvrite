@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 from vvrite import model_store
 from vvrite.asr_language import resolve_asr_language
 from vvrite.asr_models import OUTPUT_MODE_TRANSLATE_TO_ENGLISH
+from vvrite.asr_prompts import transcription_prompt
 from vvrite.preferences import SAMPLE_RATE
 
 _loaded_model_key = None
@@ -251,8 +252,11 @@ def _transcribe_kwargs(model, prefs):
     if language is not None:
         kwargs["language"] = language
     custom_words = getattr(prefs, "custom_words", "").strip()
-    if custom_words:
-        kwargs["initial_prompt"] = custom_words
+    if prefs.output_mode == OUTPUT_MODE_TRANSLATE_TO_ENGLISH:
+        if custom_words:
+            kwargs["initial_prompt"] = custom_words
+    else:
+        kwargs["initial_prompt"] = transcription_prompt(custom_words)
     return kwargs
 
 

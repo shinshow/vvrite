@@ -54,7 +54,8 @@ class TestTranscriberRouter(unittest.TestCase):
         size = get_model_size("qwen3_asr_1_7b_8bit")
 
         self.assertEqual(size, 1_200_000_000)
-        backend.get_size.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
+        backend.get_size.assert_called_once()
+        self.assertEqual(backend.get_size.call_args.args[0].key, "qwen3_asr_1_7b_8bit")
 
     @patch("vvrite.transcriber._qwen_backend")
     def test_download_model_routes_to_qwen_backend(self, mock_qwen_backend):
@@ -67,10 +68,9 @@ class TestTranscriberRouter(unittest.TestCase):
         path = download_model("qwen3_asr_1_7b_8bit")
 
         self.assertEqual(path, "/fake/path")
-        backend.download.assert_called_once_with(
-            "mlx-community/Qwen3-ASR-1.7B-8bit",
-            progress_callback=None,
-        )
+        backend.download.assert_called_once()
+        self.assertEqual(backend.download.call_args.args[0].key, "qwen3_asr_1_7b_8bit")
+        self.assertIsNone(backend.download.call_args.kwargs["progress_callback"])
 
     @patch("vvrite.transcriber._qwen_backend")
     def test_load_from_local_routes_to_selected_backend(self, mock_qwen_backend):
@@ -217,7 +217,8 @@ class TestTranscriberRouter(unittest.TestCase):
 
         self.assertEqual(result, "hello")
         whisper_backend.unload.assert_called_once_with()
-        qwen_backend.load.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
+        qwen_backend.load.assert_called_once()
+        self.assertEqual(qwen_backend.load.call_args.args[0].key, "qwen3_asr_1_7b_8bit")
         qwen_backend.transcribe.assert_called_once()
 
     @patch("vvrite.transcriber._whisper_mlx_backend")
@@ -241,12 +242,15 @@ class TestTranscriberRouter(unittest.TestCase):
             progress_callback=callback,
         )
 
-        qwen_backend.download.assert_called_once_with(
-            "mlx-community/Qwen3-ASR-1.7B-8bit",
-            progress_callback=callback,
+        qwen_backend.download.assert_called_once()
+        self.assertEqual(
+            qwen_backend.download.call_args.args[0].key,
+            "qwen3_asr_1_7b_8bit",
         )
+        self.assertIs(qwen_backend.download.call_args.kwargs["progress_callback"], callback)
         whisper_backend.unload.assert_called_once_with()
-        qwen_backend.load.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
+        qwen_backend.load.assert_called_once()
+        self.assertEqual(qwen_backend.load.call_args.args[0].key, "qwen3_asr_1_7b_8bit")
         self.assertTrue(transcriber.is_model_loaded())
 
     @patch("vvrite.transcriber._whisper_mlx_backend")
@@ -316,8 +320,10 @@ class TestQwenBackend(unittest.TestCase):
             "vvrite.asr_backends.qwen.snapshot_download",
             side_effect=fake_snapshot_download,
         ):
+            from vvrite.asr_models import get_model
+
             qwen.download(
-                "mlx-community/Qwen3-ASR-1.7B-8bit",
+                get_model("qwen3_asr_1_7b_8bit"),
                 progress_callback=lambda downloaded, total: progress.append(
                     (downloaded, total)
                 ),
@@ -331,8 +337,9 @@ class TestQwenBackend(unittest.TestCase):
         self, mock_snapshot_download, mock_model_dir
     ):
         from vvrite.asr_backends import qwen
+        from vvrite.asr_models import get_model
 
-        self.assertTrue(qwen.is_cached("mlx-community/Qwen3-ASR-1.7B-8bit"))
+        self.assertTrue(qwen.is_cached(get_model("qwen3_asr_1_7b_8bit")))
         mock_snapshot_download.assert_called_once_with(
             repo_id="mlx-community/Qwen3-ASR-1.7B-8bit",
             local_dir="/tmp/qwen",
@@ -345,6 +352,7 @@ class TestQwenBackend(unittest.TestCase):
         self, mock_model_dir, mock_safe_warm_up
     ):
         from vvrite.asr_backends import qwen
+        from vvrite.asr_models import get_model
 
         fake_load_model = MagicMock()
         fake_utils = types.ModuleType("mlx_audio.stt.utils")
@@ -360,7 +368,7 @@ class TestQwenBackend(unittest.TestCase):
                 "mlx_audio.stt.utils": fake_utils,
             },
         ):
-            qwen.load("mlx-community/Qwen3-ASR-1.7B-8bit")
+            qwen.load(get_model("qwen3_asr_1_7b_8bit"))
 
         fake_load_model.assert_called_once_with("/tmp/qwen")
 
@@ -372,6 +380,7 @@ class TestQwenBackend(unittest.TestCase):
         self, mock_model_dir, mock_safe_warm_up, mock_normalize, mock_unlink
     ):
         from vvrite.asr_backends import qwen
+        from vvrite.asr_models import get_model
 
         thread_ids = []
 
@@ -405,7 +414,7 @@ class TestQwenBackend(unittest.TestCase):
             release_load_thread = threading.Event()
 
             def load_and_wait():
-                qwen.load("mlx-community/Qwen3-ASR-1.7B-8bit")
+                qwen.load(get_model("qwen3_asr_1_7b_8bit"))
                 loaded.set()
                 release_load_thread.wait(timeout=5)
 
@@ -449,6 +458,26 @@ class TestQwenBackend(unittest.TestCase):
 
         mock_resolve_language.assert_called_once()
         self.assertNotIn("language", model.generate.call_args.kwargs)
+        self.assertIn("Do not translate", model.generate.call_args.kwargs["system_prompt"])
+
+    @patch("vvrite.asr_backends.qwen.model_store.model_dir")
+    @patch("vvrite.asr_backends.qwen.snapshot_download")
+    def test_qwen_bf16_uses_model_specific_cache_directory(
+        self, mock_snapshot_download, mock_model_dir
+    ):
+        from vvrite.asr_backends import qwen
+        from vvrite.asr_models import get_model
+
+        mock_model_dir.return_value = "/tmp/qwen-bf16"
+
+        self.assertTrue(qwen.is_cached(get_model("qwen3_asr_1_7b_bf16")))
+
+        mock_model_dir.assert_called_once_with("qwen3_asr_1_7b_bf16")
+        mock_snapshot_download.assert_called_once_with(
+            repo_id="mlx-community/Qwen3-ASR-1.7B-bf16",
+            local_dir="/tmp/qwen-bf16",
+            local_files_only=True,
+        )
 
 
 if __name__ == "__main__":

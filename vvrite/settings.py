@@ -573,7 +573,7 @@ class SettingsWindowController(NSObject):
             delegate = None
         if getattr(delegate, "_recording", False):
             return
-        devices = list_input_devices(refresh=True)
+        devices = list_input_devices(refresh=False)
         signature = self._mic_signature(devices)
         if signature != self._mic_device_signature:
             self._populate_mics(devices=devices)
