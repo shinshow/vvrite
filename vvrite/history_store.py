@@ -6,6 +6,12 @@ from dataclasses import asdict, dataclass
 import json
 import os
 
+from vvrite import model_store
+
+
+def default_history_path() -> str:
+    return os.path.join(os.path.dirname(model_store.model_root()), "history.json")
+
 
 @dataclass(frozen=True)
 class DictationRecord:

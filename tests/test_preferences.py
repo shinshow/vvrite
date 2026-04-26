@@ -23,6 +23,8 @@ _TEST_KEYS = [
     "onboarding_completed",
     "custom_words",
     "replacement_rules",
+    "history_enabled",
+    "history_limit",
     "auto_update_check",
     "last_update_check",
     "ui_language",
@@ -214,6 +216,14 @@ class TestPreferences(unittest.TestCase):
         prefs.replacement_rules = "큐엔 -> Qwen"
 
         self.assertEqual(prefs.replacement_rules, "큐엔 -> Qwen")
+
+    def test_default_history_preferences(self):
+        from vvrite.preferences import Preferences
+
+        prefs = Preferences()
+
+        self.assertTrue(prefs.history_enabled)
+        self.assertEqual(prefs.history_limit, 10)
 
     def test_migrates_custom_words_from_legacy_python_domain(self):
         defaults = NSUserDefaults.standardUserDefaults()

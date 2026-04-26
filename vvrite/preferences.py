@@ -36,6 +36,8 @@ _DEFAULTS = {
     "onboarding_completed": False,
     "custom_words": "",
     "replacement_rules": "",
+    "history_enabled": True,
+    "history_limit": 10,
     "auto_update_check": True,
     "last_update_check": 0.0,
     "asr_language": "auto",
@@ -257,6 +259,22 @@ class Preferences:
     @replacement_rules.setter
     def replacement_rules(self, value: str):
         self._set("replacement_rules", value)
+
+    @property
+    def history_enabled(self) -> bool:
+        return bool(self._get("history_enabled"))
+
+    @history_enabled.setter
+    def history_enabled(self, value: bool):
+        self._set("history_enabled", value)
+
+    @property
+    def history_limit(self) -> int:
+        return int(self._get("history_limit"))
+
+    @history_limit.setter
+    def history_limit(self, value: int):
+        self._set("history_limit", max(0, int(value)))
 
     @property
     def onboarding_completed(self) -> bool:
