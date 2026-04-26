@@ -4,6 +4,13 @@ All notable changes to this fork are documented here.
 
 ## Unreleased
 
+## [1.1.5] - 2026-04-26
+
+### Fixed
+
+- Cleared onboarding model download progress from the menu bar after model load success or failure so `100%` does not remain visible after launch.
+- Bumped app version from `1.1.4` to `1.1.5`.
+
 ## [1.1.4] - 2026-04-26
 
 ### Fixed

@@ -145,8 +145,8 @@ app = BUNDLE(
     bundle_identifier=APP_BUNDLE_IDENTIFIER,
     info_plist={
         "CFBundleName": "vvrite",
-        "CFBundleShortVersionString": "1.1.4",  # keep in sync with vvrite/__init__.__version__
-        "CFBundleVersion": "11",
+        "CFBundleShortVersionString": "1.1.5",  # keep in sync with vvrite/__init__.__version__
+        "CFBundleVersion": "12",
         "LSUIElement": True,
         "NSMicrophoneUsageDescription": (
             "vvrite needs microphone access to record and transcribe your speech."

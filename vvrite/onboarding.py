@@ -759,6 +759,7 @@ class OnboardingWindowController(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def modelLoadFailed_(self, error_msg):
+        self._status_bar.setDownloadProgress_(-1)
         self._load_retries += 1
         self._progress_bar.setIndeterminate_(False)
         self._progress_bar.stopAnimation_(None)
@@ -798,6 +799,7 @@ class OnboardingWindowController(NSObject):
 
     @objc.typedSelector(b"v@:@")
     def modelLoadComplete_(self, _):
+        self._status_bar.setDownloadProgress_(-1)
         self._progress_bar.setIndeterminate_(False)
         self._progress_bar.stopAnimation_(None)
         self._progress_bar.setDoubleValue_(100.0)
