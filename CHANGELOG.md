@@ -4,6 +4,19 @@ All notable changes to this fork are documented here.
 
 ## Unreleased
 
+## [1.1.3] - 2026-04-26
+
+### Changed
+
+- Changed the global dictation hotkey to push-to-talk behavior: press starts recording and release stops recording.
+- Updated English and Korean onboarding text to describe hold-to-record behavior.
+- Bumped app version from `1.1.2` to `1.1.3`.
+
+### Fixed
+
+- Fixed short, clipped recordings caused by key-down toggle semantics diverging from the intended key-down/key-up recording state machine.
+- Started the microphone stream before playing the ready sound, and stopped the stream before playing the stop sound, so cue sounds do not define or pollute the captured speech boundary.
+
 ## [1.1.2] - 2026-04-26
 
 ### Changed

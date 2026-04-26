@@ -22,7 +22,51 @@ class TestHotkeyManager(unittest.TestCase):
         manager._delegate = delegate
         manager._prefs = _Prefs()
         manager._tap = None
+        manager._recording_hotkey_down = False
         return manager
+
+    def test_hotkey_down_starts_recording(self):
+        delegate = MagicMock()
+        manager = self._manager(delegate)
+
+        def field_value(_event, field):
+            if field == Quartz.kCGKeyboardEventKeycode:
+                return _Prefs.hotkey_keycode
+            if field == Quartz.kCGKeyboardEventAutorepeat:
+                return 0
+            return 0
+
+        with (
+            patch.object(hotkey, "CGEventGetIntegerValueField", side_effect=field_value),
+            patch.object(hotkey, "CGEventGetFlags", return_value=_Prefs.hotkey_modifiers),
+            patch.object(hotkey.threading, "Thread") as thread,
+        ):
+            result = manager._callback(None, Quartz.kCGEventKeyDown, object(), None)
+
+        self.assertIsNone(result)
+        self.assertTrue(manager._recording_hotkey_down)
+        self.assertIs(thread.call_args.kwargs["target"], delegate.startRecording)
+
+    def test_hotkey_up_stops_recording_even_if_modifier_was_released_first(self):
+        delegate = MagicMock()
+        manager = self._manager(delegate)
+        manager._recording_hotkey_down = True
+
+        def field_value(_event, field):
+            if field == Quartz.kCGKeyboardEventKeycode:
+                return _Prefs.hotkey_keycode
+            return 0
+
+        with (
+            patch.object(hotkey, "CGEventGetIntegerValueField", side_effect=field_value),
+            patch.object(hotkey, "CGEventGetFlags", return_value=0),
+            patch.object(hotkey.threading, "Thread") as thread,
+        ):
+            result = manager._callback(None, Quartz.kCGEventKeyUp, object(), None)
+
+        self.assertIsNone(result)
+        self.assertFalse(manager._recording_hotkey_down)
+        self.assertIs(thread.call_args.kwargs["target"], delegate.stopRecording)
 
     def test_ignores_auto_repeat_for_recording_hotkey(self):
         delegate = MagicMock()
@@ -42,7 +86,7 @@ class TestHotkeyManager(unittest.TestCase):
             result = manager._callback(None, Quartz.kCGEventKeyDown, object(), None)
 
         self.assertIsNone(result)
-        delegate.toggleRecording.assert_not_called()
+        delegate.startRecording.assert_not_called()
 
 
 if __name__ == "__main__":

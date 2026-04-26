@@ -43,7 +43,7 @@ strings = {
         },
         "hotkey": {
             "title": "단축키",
-            "subtitle": "눌러서 녹음 시작/중지",
+            "subtitle": "누르고 있는 동안 녹음, 떼면 전사",
         },
         "retract": {
             "title": "빠른 수정",

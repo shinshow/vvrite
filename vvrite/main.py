@@ -239,13 +239,18 @@ class AppDelegate(NSObject):
             else:
                 self._stop_recording()
 
+    def startRecording(self):
+        with self._lock:
+            if not self._recording:
+                self._start_recording()
+
+    def stopRecording(self):
+        with self._lock:
+            if self._recording:
+                self._stop_recording()
+
     def _start_recording(self):
         self._recording = True
-        sounds.play(self._prefs.sound_start, self._prefs.start_volume)
-
-        self.performSelectorOnMainThread_withObject_waitUntilDone_(
-            "showRecordingUI:", None, False
-        )
 
         def level_cb(level):
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
@@ -257,6 +262,10 @@ class AppDelegate(NSObject):
                 device=self._prefs.mic_device,
                 level_callback=level_cb,
             )
+            sounds.play(self._prefs.sound_start, self._prefs.start_volume)
+            self.performSelectorOnMainThread_withObject_waitUntilDone_(
+                "showRecordingUI:", None, False
+            )
         except RuntimeError as e:
             self._recording = False
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
@@ -267,14 +276,13 @@ class AppDelegate(NSObject):
 
     def _stop_recording(self):
         self._recording = False
-        sounds.play(self._prefs.sound_stop, self._prefs.stop_volume)
-
-        self.performSelectorOnMainThread_withObject_waitUntilDone_(
-            "showTranscribingUI:", None, False
-        )
 
         try:
             raw_path = self._recorder.stop()
+            sounds.play(self._prefs.sound_stop, self._prefs.stop_volume)
+            self.performSelectorOnMainThread_withObject_waitUntilDone_(
+                "showTranscribingUI:", None, False
+            )
         except RuntimeError as e:
             self.performSelectorOnMainThread_withObject_waitUntilDone_(
                 "showErrorUI:",

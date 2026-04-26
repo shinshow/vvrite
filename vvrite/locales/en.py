@@ -43,7 +43,7 @@ strings = {
         },
         "hotkey": {
             "title": "Hotkey",
-            "subtitle": "Press to start/stop recording",
+            "subtitle": "Hold to record, release to transcribe",
         },
         "retract": {
             "title": "Quick Correction",
