@@ -30,5 +30,26 @@ class TestReplacementParsing(unittest.TestCase):
         self.assertEqual(rules, [])
 
 
+from vvrite.text_replacements import apply_replacements
+
+
+class TestReplacementApplication(unittest.TestCase):
+    def test_apply_replacements_is_case_insensitive(self):
+        result = apply_replacements(
+            "큐엔 모델과 OPEN AI를 사용합니다.",
+            [("큐엔", "Qwen"), ("open ai", "OpenAI")],
+        )
+
+        self.assertEqual(result, "Qwen 모델과 OpenAI를 사용합니다.")
+
+    def test_apply_replacements_respects_word_boundaries_for_ascii(self):
+        result = apply_replacements(
+            "todo and methodology",
+            [("todo", "TODO")],
+        )
+
+        self.assertEqual(result, "TODO and methodology")
+
+
 if __name__ == "__main__":
     unittest.main()
