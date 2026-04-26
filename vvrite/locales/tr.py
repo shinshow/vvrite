@@ -95,7 +95,7 @@ strings = {
             "downloading_progress": "Downloading: {progress}",
             "download_failed": "Model download failed",
             "delete_current_model_blocked": "Şu anda yüklü modeli silmeden önce vvrite'ı kapatın veya modeli değiştirin.",
-            "translation_unsupported": "İngilizce çeviri için Whisper large-v3 gerekir.",
+            "translation_unsupported": "İngilizce çeviri için Whisper small 4-bit MLX gerekir.",
             "mode_transcribe": "Konuşulan dilde yazıya dök",
             "mode_translate_to_english": "İngilizceye çevir",
         },

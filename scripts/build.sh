@@ -77,6 +77,16 @@ codesign_runtime() {
     codesign "${args[@]}" "$target"
 }
 
+SIGNED_TARGETS_FILE=$(mktemp)
+sign_once_runtime() {
+    local target="$1"
+    if grep -Fxq -- "$target" "$SIGNED_TARGETS_FILE"; then
+        return
+    fi
+    codesign_runtime "$target"
+    printf '%s\n' "$target" >> "$SIGNED_TARGETS_FILE"
+}
+
 codesign_dmg() {
     local args=(--force --sign "$SIGN_IDENTITY")
     if [[ "$BUILD_MODE" != "local" ]]; then
@@ -124,16 +134,31 @@ PY
 # mlx-metal ships per-macOS-version wheels. A metallib built for macOS 26
 # (MSL 4.0) won't load on macOS 15. Swap in the macOS 15 wheel's metallib
 # so the resulting .app runs on macOS 15+.
-MLX_COMPAT_DIR=$(mktemp -d)
 MLX_METAL_VER=$("$PIP_BIN" show mlx-metal | awk '/^Version:/{print $2}')
-echo "▸ Fetching macOS 15-compatible mlx-metal $MLX_METAL_VER..."
-"$PIP_BIN" download --no-deps -d "$MLX_COMPAT_DIR" \
-    "mlx-metal==$MLX_METAL_VER" \
-    --platform macosx_15_0_arm64 --only-binary :all: --quiet
+MLX_METAL_PLATFORM="macosx_15_0_arm64"
+MLX_COMPAT_CACHE_DIR="build/mlx-metal-compat/$MLX_METAL_VER/$MLX_METAL_PLATFORM"
+CACHE_METALLIB="$MLX_COMPAT_CACHE_DIR/mlx.metallib"
 SITE=$("$PYTHON_BIN" -c "import site; print(site.getsitepackages()[0])")
-unzip -o "$MLX_COMPAT_DIR"/mlx_metal-*.whl "mlx/lib/mlx.metallib" -d "$SITE" > /dev/null
-rm -rf "$MLX_COMPAT_DIR"
-echo "  ✓ Backward-compatible metallib installed (macOS 15+)"
+TARGET_METALLIB="$SITE/mlx/lib/mlx.metallib"
+if [[ ! -f "$CACHE_METALLIB" ]]; then
+    echo "▸ Fetching macOS 15-compatible mlx-metal $MLX_METAL_VER..."
+    MLX_COMPAT_DIR=$(mktemp -d)
+    mkdir -p "$MLX_COMPAT_CACHE_DIR"
+    "$PIP_BIN" download --no-deps -d "$MLX_COMPAT_DIR" \
+        "mlx-metal==$MLX_METAL_VER" \
+        --platform "$MLX_METAL_PLATFORM" --only-binary :all: --quiet
+    unzip -p "$MLX_COMPAT_DIR"/mlx_metal-*.whl "mlx/lib/mlx.metallib" \
+        > "$CACHE_METALLIB"
+    rm -rf "$MLX_COMPAT_DIR"
+else
+    echo "▸ Using cached macOS 15-compatible mlx-metal $MLX_METAL_VER..."
+fi
+if cmp -s "$CACHE_METALLIB" "$TARGET_METALLIB"; then
+    echo "  ✓ Backward-compatible metallib already installed (macOS 15+)"
+else
+    cp "$CACHE_METALLIB" "$TARGET_METALLIB"
+    echo "  ✓ Backward-compatible metallib installed (macOS 15+)"
+fi
 
 # ── Step 1: Build ──────────────────────────────────────────────
 echo "▸ Building with PyInstaller..."
@@ -150,19 +175,20 @@ echo "▸ Signing embedded binaries..."
 
 # Sign .so and .dylib files first (innermost → outermost)
 find "$BUNDLE" -type f \( -name "*.so" -o -name "*.dylib" \) | while read -r lib; do
-    codesign_runtime "$lib"
+    sign_once_runtime "$lib"
 done
 
 # Sign embedded frameworks
 find "$BUNDLE/Contents/Frameworks" -type f -perm +111 2>/dev/null | while read -r bin; do
-    codesign_runtime "$bin"
+    sign_once_runtime "$bin"
 done
 
 # Sign the main executable
-codesign_runtime "$BUNDLE/Contents/MacOS/vvrite"
+sign_once_runtime "$BUNDLE/Contents/MacOS/vvrite"
 
 # Sign the .app bundle itself
 codesign_runtime "$BUNDLE"
+rm -f "$SIGNED_TARGETS_FILE"
 
 echo "  ✓ Signing complete"
 
@@ -209,6 +235,8 @@ codesign_dmg
 if [[ "$BUILD_MODE" == "local" ]]; then
     echo "▸ Skipping DMG notarization for local build."
     echo "  ✓ Local DMG ready: $DMG"
+    echo "▸ Cleaning local intermediate app bundle..."
+    rm -rf "$BUNDLE" "dist/vvrite"
     echo ""
     echo "✓ Done! $DMG is ready for local testing."
     exit 0

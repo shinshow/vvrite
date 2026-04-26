@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.es.md">Español</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="CHANGELOG.md">Changelog</a>
+  English · <a href="README.ko.md">한국어</a> · <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
@@ -135,4 +135,4 @@ On first launch, the onboarding wizard will guide you through:
 
 MIT — see [LICENSE](LICENSE) for details.
 
-Whisper model weights are distributed through the [mlx-community](https://huggingface.co/mlx-community) Hugging Face organization. The Qwen3-ASR model remains Apache 2.0 licensed.
+Third-party dependency and model notices are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Privacy and local data handling notes are documented in [PRIVACY.md](PRIVACY.md).

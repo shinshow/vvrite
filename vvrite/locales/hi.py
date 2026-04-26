@@ -95,7 +95,7 @@ strings = {
             "downloading_progress": "Downloading: {progress}",
             "download_failed": "Model download failed",
             "delete_current_model_blocked": "वर्तमान में लोड मॉडल हटाने से पहले vvrite बंद करें या मॉडल बदलें।",
-            "translation_unsupported": "अंग्रेज़ी अनुवाद के लिए Whisper large-v3 चाहिए।",
+            "translation_unsupported": "अंग्रेज़ी अनुवाद के लिए Whisper small 4-bit MLX चाहिए।",
             "mode_transcribe": "बोली गई भाषा में ट्रांसक्राइब करें",
             "mode_translate_to_english": "अंग्रेज़ी में अनुवाद करें",
         },

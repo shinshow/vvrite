@@ -252,6 +252,42 @@ class TestTranscriberRouter(unittest.TestCase):
 
 class TestQwenBackend(unittest.TestCase):
     @patch("vvrite.asr_backends.qwen.model_store.model_dir", return_value="/tmp/qwen")
+    @patch("vvrite.asr_backends.qwen.model_info")
+    def test_qwen_download_progress_aggregates_huggingface_tqdm_updates(
+        self, mock_model_info, mock_model_dir
+    ):
+        from vvrite.asr_backends import qwen
+
+        mock_model_info.return_value = types.SimpleNamespace(
+            siblings=[
+                types.SimpleNamespace(size=100),
+                types.SimpleNamespace(size=300),
+            ]
+        )
+        progress = []
+
+        def fake_snapshot_download(**kwargs):
+            if "tqdm_class" not in kwargs:
+                return "/tmp/qwen"
+            progress_bar = kwargs["tqdm_class"]()
+            progress_bar.update(100)
+            progress_bar.update(300)
+            return "/tmp/qwen"
+
+        with patch(
+            "vvrite.asr_backends.qwen.snapshot_download",
+            side_effect=fake_snapshot_download,
+        ):
+            qwen.download(
+                "mlx-community/Qwen3-ASR-1.7B-8bit",
+                progress_callback=lambda downloaded, total: progress.append(
+                    (downloaded, total)
+                ),
+            )
+
+        self.assertEqual(progress, [(0, 400), (100, 400), (400, 400), (400, 400)])
+
+    @patch("vvrite.asr_backends.qwen.model_store.model_dir", return_value="/tmp/qwen")
     @patch("vvrite.asr_backends.qwen.snapshot_download")
     def test_qwen_cache_check_does_not_require_model_load(
         self, mock_snapshot_download, mock_model_dir

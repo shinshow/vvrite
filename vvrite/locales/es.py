@@ -95,7 +95,7 @@ strings = {
             "downloading_progress": "Downloading: {progress}",
             "download_failed": "Model download failed",
             "delete_current_model_blocked": "Cierra vvrite o cambia de modelo antes de eliminar el modelo cargado actualmente.",
-            "translation_unsupported": "La traducción al inglés requiere Whisper large-v3.",
+            "translation_unsupported": "La traducción al inglés requiere Whisper small 4-bit MLX.",
             "mode_transcribe": "Transcribir en el idioma hablado",
             "mode_translate_to_english": "Traducir al inglés",
         },

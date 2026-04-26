@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · 한국어 · <a href="README.ja.md">日本語</a> · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.es.md">Español</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="CHANGELOG.md">변경이력</a>
+  <a href="README.md">English</a> · 한국어 · <a href="CHANGELOG.md">변경이력</a>
 </p>
 
 ---
@@ -126,4 +126,4 @@ open dist/vvrite.dmg
 
 MIT — 자세한 내용은 [LICENSE](LICENSE)를 참조하세요.
 
-Whisper 모델 가중치는 Hugging Face의 [mlx-community](https://huggingface.co/mlx-community) 조직을 통해 배포됩니다. Qwen3-ASR 모델은 Apache 2.0 라이선스를 유지합니다.
+서드파티 의존성과 모델 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 정리되어 있습니다. 개인정보와 로컬 데이터 처리 내용은 [PRIVACY.md](PRIVACY.md)를 참조하세요.

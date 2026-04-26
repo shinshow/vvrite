@@ -8,6 +8,7 @@ import threading
 import numpy as np
 import soundfile as sf
 from huggingface_hub import model_info, snapshot_download
+from tqdm.auto import tqdm
 
 from vvrite import audio_utils, model_store
 from vvrite.locales import ASR_LANGUAGE_MAP
@@ -17,6 +18,47 @@ _MODEL_KEY = "qwen3_asr_1_7b_8bit"
 _model = None
 _warmed_up = False
 _worker_thread_id = None
+
+
+class _ProgressTqdm(tqdm):
+    """Aggregate Hugging Face per-file tqdm updates into one app callback."""
+
+    _callback = None
+    _total = 0
+    _downloaded = 0
+    _progress_state_lock = threading.Lock()
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("disable", True)
+        kwargs.setdefault("leave", False)
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def configure(cls, callback, total: int):
+        with cls._progress_state_lock:
+            cls._callback = callback
+            cls._total = max(0, int(total or 0))
+            cls._downloaded = 0
+
+    @classmethod
+    def clear(cls):
+        with cls._progress_state_lock:
+            cls._callback = None
+            cls._total = 0
+            cls._downloaded = 0
+
+    def update(self, n=1):
+        amount = int(n or 0)
+        if amount <= 0:
+            return
+        super().update(amount)
+        with type(self)._progress_state_lock:
+            type(self)._downloaded += amount
+            callback = type(self)._callback
+            downloaded = type(self)._downloaded
+            total = type(self)._total
+        if callback is not None:
+            callback(downloaded, total)
 
 
 def _worker_initializer():
@@ -70,9 +112,23 @@ def get_size(model_id: str) -> int:
 
 def download(model_id: str, progress_callback=None) -> str:
     local_dir = model_store.model_dir(_MODEL_KEY)
+    total = get_size(model_id) if progress_callback is not None else 0
     if progress_callback is not None:
-        progress_callback(0, 0)
-    return snapshot_download(repo_id=model_id, local_dir=local_dir)
+        progress_callback(0, total)
+        _ProgressTqdm.configure(progress_callback, total)
+    try:
+        kwargs = {
+            "repo_id": model_id,
+            "local_dir": local_dir,
+        }
+        if progress_callback is not None:
+            kwargs["tqdm_class"] = _ProgressTqdm
+        result = snapshot_download(**kwargs)
+        if progress_callback is not None and total > 0:
+            progress_callback(total, total)
+        return result
+    finally:
+        _ProgressTqdm.clear()
 
 
 def load_from_local(local_path: str):

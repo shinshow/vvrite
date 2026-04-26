@@ -95,7 +95,7 @@ strings = {
             "downloading_progress": "Downloading: {progress}",
             "download_failed": "Model download failed",
             "delete_current_model_blocked": "删除当前已加载的模型前，请退出 vvrite 或切换模型。",
-            "translation_unsupported": "英文翻译需要 Whisper large-v3。",
+            "translation_unsupported": "英文翻译需要 Whisper small 4-bit MLX。",
             "mode_transcribe": "按原语言转写",
             "mode_translate_to_english": "翻译成英文",
         },

@@ -25,13 +25,13 @@ mlx_whisper_package_dir = mlx_whisper_spec.submodule_search_locations[0]
 
 # PyObjC bridge modules need all submodules collected
 pyobjc_hiddenimports = (
-    collect_submodules("objc")
-    + collect_submodules("AppKit")
-    + collect_submodules("Foundation")
-    + collect_submodules("Quartz")
-    + collect_submodules("ApplicationServices")
-    + collect_submodules("AVFoundation")
-    + collect_submodules("ServiceManagement")
+    sorted(collect_submodules("objc"))
+    + sorted(collect_submodules("AppKit"))
+    + sorted(collect_submodules("Foundation"))
+    + sorted(collect_submodules("Quartz"))
+    + sorted(collect_submodules("ApplicationServices"))
+    + sorted(collect_submodules("AVFoundation"))
+    + sorted(collect_submodules("ServiceManagement"))
 )
 
 a = Analysis(
@@ -51,9 +51,9 @@ a = Analysis(
     ],
     hiddenimports=pyobjc_hiddenimports + [
         # Locale modules (dynamically imported by vvrite.locales)
-        *collect_submodules("vvrite.locales"),
+        *sorted(collect_submodules("vvrite.locales")),
         # ASR backends (dynamically imported by vvrite.transcriber)
-        *collect_submodules("vvrite.asr_backends"),
+        *sorted(collect_submodules("vvrite.asr_backends")),
         # MLX (namespace package — must be explicit)
         "mlx",
         "mlx._reprlib_fix",
@@ -107,6 +107,7 @@ a = Analysis(
         "PIL",
         "matplotlib",
         "pandas",
+        "__main__",
     ],
     noarchive=False,
     optimize=0,

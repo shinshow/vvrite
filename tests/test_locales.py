@@ -256,6 +256,18 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
         self.assertIn("update", s)
         self.assertIn("title", s["update"])
 
+    def test_translation_warning_names_supported_model(self):
+        from vvrite.locales.en import strings
+
+        self.assertIn(
+            "Whisper small 4-bit MLX",
+            strings["settings"]["model"]["translation_unsupported"],
+        )
+        self.assertNotIn(
+            "Whisper large-v3.",
+            strings["settings"]["model"]["translation_unsupported"],
+        )
+
     def test_menu_keys(self):
         from vvrite.locales.en import strings
 
