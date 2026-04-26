@@ -291,12 +291,23 @@ class TestEnglishStringsCompleteness(unittest.TestCase):
             "about",
             "check_updates",
             "update_available",
+            "transcribe_file",
             "copy_last_dictation",
             "recent_dictations",
             "quit",
         ]
         for key in expected:
             self.assertIn(key, strings["menu"], f"Missing menu.{key}")
+
+    def test_file_transcription_keys(self):
+        from vvrite.locales.en import strings
+
+        self.assertIn("file_transcription", strings)
+        self.assertIn(
+            "choose_file",
+            strings["file_transcription"],
+            "Missing file_transcription.choose_file",
+        )
 
     def test_history_keys(self):
         from vvrite.locales.en import strings

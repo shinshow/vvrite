@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "التحقق من التحديثات...",
         "update_available": "تحديث متاح ({version})",
+        "transcribe_file": "تفريغ ملف...",
         "copy_last_dictation": "نسخ آخر إملاء",
         "recent_dictations": "الإملاءات الأخيرة...",
         "quit": "إنهاء vvrite",
+    },
+    "file_transcription": {
+        "choose_file": "اختر ملف صوت أو فيديو",
     },
     "history": {
         "title": "الإملاءات الأخيرة",

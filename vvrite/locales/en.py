@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "Check for Updates...",
         "update_available": "Update Available ({version})",
+        "transcribe_file": "Transcribe File...",
         "copy_last_dictation": "Copy Last Dictation",
         "recent_dictations": "Recent Dictations...",
         "quit": "Quit vvrite",
+    },
+    "file_transcription": {
+        "choose_file": "Choose audio or video file",
     },
     "history": {
         "title": "Recent Dictations",

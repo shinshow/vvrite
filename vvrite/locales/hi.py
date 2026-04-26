@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "अपडेट जाँचें...",
         "update_available": "अपडेट उपलब्ध ({version})",
+        "transcribe_file": "फ़ाइल ट्रांसक्राइब करें...",
         "copy_last_dictation": "अंतिम डिक्टेशन कॉपी करें",
         "recent_dictations": "हाल के डिक्टेशन...",
         "quit": "vvrite बंद करें",
+    },
+    "file_transcription": {
+        "choose_file": "ऑडियो या वीडियो फ़ाइल चुनें",
     },
     "history": {
         "title": "हाल के डिक्टेशन",

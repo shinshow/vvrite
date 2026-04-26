@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "Проверить обновления...",
         "update_available": "Доступно обновление ({version})",
+        "transcribe_file": "Транскрибировать файл...",
         "copy_last_dictation": "Скопировать последнюю диктовку",
         "recent_dictations": "Недавние диктовки...",
         "quit": "Завершить vvrite",
+    },
+    "file_transcription": {
+        "choose_file": "Выбрать аудио- или видеофайл",
     },
     "history": {
         "title": "Недавние диктовки",

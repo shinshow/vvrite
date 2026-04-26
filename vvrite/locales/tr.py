@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "Güncellemeleri Kontrol Et...",
         "update_available": "Güncelleme Mevcut ({version})",
+        "transcribe_file": "Dosya Yazıya Dök...",
         "copy_last_dictation": "Son Dikteyi Kopyala",
         "recent_dictations": "Son Dikteler...",
         "quit": "vvrite'dan Çık",
+    },
+    "file_transcription": {
+        "choose_file": "Ses veya video dosyası seç",
     },
     "history": {
         "title": "Son Dikteler",

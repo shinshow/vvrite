@@ -154,6 +154,19 @@ class TestStatusBarMenuActions(unittest.TestCase):
         self.assertIs(items_by_action["copyLastDictation:"].target, delegate)
         self.assertIs(items_by_action["showRecentDictations:"].target, delegate)
 
+    def test_menu_contains_transcribe_file_action(self):
+        controller, _status_bar, delegate = self._build_controller()
+
+        titles = [item.title for item in controller._menu.items]
+        items_by_action = {
+            item.action: item
+            for item in controller._menu.items
+            if getattr(item, "action", None)
+        }
+
+        self.assertIn("Transcribe File...", titles)
+        self.assertIs(items_by_action["transcribeFile:"].target, delegate)
+
     def test_status_item_uses_fixed_visible_icon_slot_on_launch(self):
         status_bar = _FakeStatusBar()
         _FakeStatusBar._instance = status_bar

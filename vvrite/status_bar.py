@@ -76,6 +76,12 @@ class StatusBarController(NSObject):
 
         self._menu.addItem_(NSMenuItem.separatorItem())
 
+        transcribe_file_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            t("menu.transcribe_file"), "transcribeFile:", ""
+        )
+        transcribe_file_item.setTarget_(self._delegate)
+        self._menu.addItem_(transcribe_file_item)
+
         # Recent dictation actions
         self._copy_last_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             t("menu.copy_last_dictation"), "copyLastDictation:", ""

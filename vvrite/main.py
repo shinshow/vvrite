@@ -24,6 +24,8 @@ from AppKit import (
     NSFont,
     NSViewWidthSizable,
     NSViewHeightSizable,
+    NSModalResponseOK,
+    NSOpenPanel,
 )
 from AppKit import NSTimer
 from Foundation import NSLog, NSURL
@@ -41,6 +43,7 @@ from vvrite.settings import SettingsWindowController
 from vvrite import transcriber, sounds
 from vvrite.recorder import Recorder
 from vvrite.clipboard import paste_and_restore, retract_text
+from vvrite.file_transcription import prepare_transcription_input
 from vvrite.history_store import DictationRecord, HistoryStore, default_history_path
 from vvrite.text_replacements import apply_replacements, parse_replacements_text
 
@@ -495,6 +498,31 @@ class AppDelegate(NSObject):
         alert.addButtonWithTitle_(t("common.ok"))
         NSApp.activateIgnoringOtherApps_(True)
         alert.runModal()
+
+    @objc.typedSelector(b"v@:@")
+    def transcribeFile_(self, sender):
+        panel = NSOpenPanel.openPanel()
+        panel.setAllowedFileTypes_(
+            ["wav", "mp3", "m4a", "mp4", "caf", "aiff", "flac"]
+        )
+        panel.setCanChooseFiles_(True)
+        panel.setCanChooseDirectories_(False)
+        panel.setAllowsMultipleSelection_(False)
+        panel.setTitle_(t("file_transcription.choose_file"))
+
+        response = panel.runModal()
+        if response != NSModalResponseOK:
+            return
+
+        source_path = str(panel.URL().path())
+        prepared_path = prepare_transcription_input(source_path)
+        self._status_bar.setStatus_("transcribing")
+        self._overlay.showTranscribing()
+        threading.Thread(
+            target=self._transcribe_and_paste,
+            args=(prepared_path,),
+            daemon=True,
+        ).start()
 
     # --- About ---
 

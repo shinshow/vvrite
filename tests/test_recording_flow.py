@@ -143,6 +143,36 @@ class TestRecordingFlow(unittest.TestCase):
         self.assertEqual(record.text, "hello")
         self.assertEqual(record.created_at, 123.0)
 
+    @patch("vvrite.main.NSModalResponseOK", 1)
+    @patch(
+        "vvrite.main.prepare_transcription_input",
+        return_value="/tmp/prepared.wav",
+    )
+    @patch("vvrite.main.NSOpenPanel")
+    def test_transcribe_file_prepares_copy_and_starts_transcription(
+        self, mock_open_panel, mock_prepare
+    ):
+        delegate = self._delegate()
+        panel = MagicMock()
+        url = MagicMock()
+        url.path.return_value = "/tmp/source.wav"
+        panel.URL.return_value = url
+        panel.runModal.return_value = 1
+        mock_open_panel.openPanel.return_value = panel
+
+        with patch.object(main.threading, "Thread") as mock_thread:
+            delegate.transcribeFile_(None)
+
+        mock_prepare.assert_called_once_with("/tmp/source.wav")
+        delegate._status_bar.setStatus_.assert_called_once_with("transcribing")
+        delegate._overlay.showTranscribing.assert_called_once_with()
+        mock_thread.assert_called_once_with(
+            target=delegate._transcribe_and_paste,
+            args=("/tmp/prepared.wav",),
+            daemon=True,
+        )
+        mock_thread.return_value.start.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

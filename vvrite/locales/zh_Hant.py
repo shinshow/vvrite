@@ -146,9 +146,13 @@ strings = {
         "about": "About vvrite...",
         "check_updates": "檢查更新...",
         "update_available": "有可用更新 ({version})",
+        "transcribe_file": "轉錄檔案...",
         "copy_last_dictation": "複製上一次聽寫",
         "recent_dictations": "最近聽寫...",
         "quit": "結束 vvrite",
+    },
+    "file_transcription": {
+        "choose_file": "選擇音訊或影片檔案",
     },
     "history": {
         "title": "最近聽寫",
