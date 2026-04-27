@@ -35,9 +35,9 @@
 ## 주요 기능
 
 - **온디바이스 변환** — Qwen3-ASR은 mlx-audio로, Whisper는 mlx-whisper로 실행되며 클라우드 API가 필요 없습니다
-- **모델 선택** — 설정에서 Qwen3-ASR 1.7B 8-bit, Whisper small 4-bit MLX, Whisper large-v3-turbo 4-bit MLX를 전환할 수 있습니다
+- **모델 선택** — 설정에서 Qwen3-ASR 8-bit/BF16과 세 가지 Whisper MLX 옵션, 총 5개 로컬 ASR 모델을 전환할 수 있습니다
 - **다국어 지원** — 한국어, 영어, 한국어/영어 혼합 받아쓰기를 로컬 모델로 처리합니다
-- **영어 번역 모드** — Whisper small 4-bit MLX는 한국어 또는 다국어 음성을 영어 텍스트로 번역 전사할 수 있습니다
+- **영어 번역 모드** — Whisper small 4-bit MLX와 Whisper large-v3 4-bit MLX는 한국어 또는 다국어 음성을 영어 텍스트로 번역 전사할 수 있습니다
 - **전역 단축키** — 어떤 앱에서든 실행 가능하며, 설정에서 변경할 수 있습니다
 - **메뉴 막대 앱** — 상태 막대에 조용히 자리 잡습니다
 - **녹음 오버레이** — 오디오 레벨 바와 타이머로 시각적 피드백을 제공합니다
@@ -53,7 +53,9 @@
 | 모델 | 적합한 용도 | 예상 디스크 사용량 | 영어 번역 |
 |---|---|---:|---|
 | Qwen3-ASR 1.7B 8-bit | 기본 다국어 받아쓰기 | 약 2.5 GB | 아니오 |
+| Qwen3-ASR 1.7B BF16 MLX | 더 높은 정밀도의 Qwen3-ASR 받아쓰기 | 약 4.08 GB | 아니오 |
 | Whisper small 4-bit MLX | 가장 빠른 Whisper 옵션과 한국어→영어 번역 | 약 139 MB | 예 |
+| Whisper large-v3 4-bit MLX | 더 높은 품질의 Whisper 전사와 영어 번역 | 약 878 MB | 예 |
 | Whisper large-v3-turbo 4-bit MLX | 더 높은 품질의 빠른 Whisper 받아쓰기 | 약 463 MB | Qdicta에서는 아니오 |
 
 Qwen3-ASR은 mlx-audio를 통해 앱 프로세스 안에서 실행됩니다. Whisper 모델은 mlx-whisper로 실행되며, 준비된 뒤에는 선택한 모델을 미리 워밍업해 받아쓰기마다 반복되는 모델 시작 비용을 줄입니다.
@@ -70,12 +72,12 @@ Qwen3-ASR은 mlx-audio를 통해 앱 프로세스 안에서 실행됩니다. Whi
 
 기본 [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) 모델은 [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)의 MLX 변환 버전입니다. 공식 Qwen 모델 카드에 따르면, Qwen3-ASR-1.7B은 30개 언어와 22개 중국어 방언의 언어 식별 및 음성 인식을 지원합니다.
 
-Whisper small 4-bit MLX와 Whisper large-v3-turbo 4-bit MLX는 빠른 Whisper 계열 전사 옵션입니다. 한국어와 영어가 섞인 입력은 전사 모드를 사용하세요. 한국어 또는 다국어 음성을 영어 결과로 받고 싶다면 Whisper small 4-bit MLX와 영어 번역 모드를 선택하세요.
+Whisper MLX 모델들은 빠른 Whisper 계열 전사 옵션입니다. 한국어와 영어가 섞인 입력은 전사 모드를 사용하세요. 한국어 또는 다국어 음성을 영어 결과로 받고 싶다면 Whisper small 4-bit MLX 또는 Whisper large-v3 4-bit MLX와 영어 번역 모드를 선택하세요.
 
 ## 요구 사항
 
 - Apple Silicon (M1/M2/M3/M4) 탑재 macOS 13 이상
-- 기본 모델용 디스크 공간 약 2.5 GB, 모든 선택 모델 설치 시 약 3.2 GB
+- 기본 모델용 디스크 공간 약 2.5 GB, 모든 선택 모델 설치 시 약 8.1 GB
 - 마이크 권한
 - 손쉬운 사용 권한 (전역 단축키용)
 
@@ -156,7 +158,7 @@ open dist/Qdicta.dmg
 | 구성 요소 | 기술 |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR 모델 | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), [Whisper small 4-bit](https://huggingface.co/mlx-community/whisper-small-4bit), [Whisper large-v3-turbo 4-bit](https://huggingface.co/mlx-community/whisper-large-v3-turbo-4bit) |
+| ASR 모델 | [Qwen3-ASR 1.7B 8-bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), [Qwen3-ASR 1.7B BF16 MLX](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-bf16), [Whisper small 4-bit MLX](https://huggingface.co/mlx-community/whisper-small-4bit), [Whisper large-v3 4-bit MLX](https://huggingface.co/mlx-community/whisper-large-v3-4bit), [Whisper large-v3-turbo 4-bit MLX](https://huggingface.co/mlx-community/whisper-large-v3-turbo-4bit) |
 | 추론 | Apple Silicon에서 [mlx-audio](https://github.com/ml-explore/mlx-audio) 및 [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) |
 | 오디오 | sounddevice + soundfile + scipy |
 | 패키징 | PyInstaller |

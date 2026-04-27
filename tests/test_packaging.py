@@ -97,6 +97,16 @@ class TestDistributionDocs(unittest.TestCase):
             self.assertNotIn("README.fr.md", text)
             self.assertNotIn("README.de.md", text)
 
+    def test_readmes_document_all_selectable_asr_models(self):
+        from vvrite.asr_models import ASR_MODELS
+
+        readme = pathlib.Path("README.md").read_text(encoding="utf-8")
+        korean = pathlib.Path("README.ko.md").read_text(encoding="utf-8")
+
+        for model in ASR_MODELS.values():
+            self.assertIn(model.display_name, readme)
+            self.assertIn(model.display_name, korean)
+
 
 if __name__ == "__main__":
     unittest.main()

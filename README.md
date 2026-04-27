@@ -35,9 +35,9 @@ The default Qwen3-ASR model and optional Whisper models support multilingual dic
 ## Features
 
 - **On-device transcription** — Qwen3-ASR via mlx-audio or Whisper via mlx-whisper, no cloud API needed
-- **Selectable ASR models** — switch between Qwen3-ASR 1.7B 8-bit, Whisper small 4-bit MLX, and Whisper large-v3-turbo 4-bit MLX in Settings
+- **Selectable ASR models** — switch between 5 local ASR models in Settings: Qwen3-ASR 8-bit/BF16 and three Whisper MLX options
 - **Multilingual-ready** — Korean, English, and mixed Korean/English dictation are supported by the local models
-- **English translation mode** — Whisper small 4-bit MLX can translate spoken Korean or multilingual speech to English text
+- **English translation mode** — Whisper small 4-bit MLX and Whisper large-v3 4-bit MLX can translate spoken Korean or multilingual speech to English text
 - **Global hotkey** — trigger from any app, configurable in Settings
 - **Menu bar app** — lives quietly in your status bar
 - **Recording overlay** — visual feedback with audio level bars and timer
@@ -53,7 +53,9 @@ The default Qwen3-ASR model and optional Whisper models support multilingual dic
 | Model | Best for | Approx. disk use | English translation |
 |---|---|---:|---|
 | Qwen3-ASR 1.7B 8-bit | Default multilingual dictation | ~2.5 GB | No |
+| Qwen3-ASR 1.7B BF16 MLX | Higher-precision Qwen3-ASR dictation | ~4.08 GB | No |
 | Whisper small 4-bit MLX | Fastest Whisper option and Korean-to-English translation | ~139 MB | Yes |
+| Whisper large-v3 4-bit MLX | Higher-quality Whisper transcription and English translation | ~878 MB | Yes |
 | Whisper large-v3-turbo 4-bit MLX | Higher-quality fast Whisper dictation | ~463 MB | No in Qdicta |
 
 Qwen3-ASR runs in-process through mlx-audio. Whisper models run through mlx-whisper, and the selected model is warmed up after preparation to avoid paying the model startup cost during dictation.
@@ -70,12 +72,12 @@ Older builds may also have cached Qwen files under `~/.cache/huggingface/hub/`.
 
 The default [`mlx-community/Qwen3-ASR-1.7B-8bit`](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit) model is an MLX conversion of [`Qwen/Qwen3-ASR-1.7B`](https://huggingface.co/Qwen/Qwen3-ASR-1.7B). According to the official Qwen model card, Qwen3-ASR-1.7B supports language identification and speech recognition for 30 languages and 22 Chinese dialects.
 
-Whisper small 4-bit MLX and Whisper large-v3-turbo 4-bit MLX add fast Whisper-family transcription options. For Korean plus English code-switching, use transcription mode. For Korean or multilingual speech translated into English output, choose Whisper small 4-bit MLX and English translation mode.
+The Whisper MLX models add fast Whisper-family transcription options. For Korean plus English code-switching, use transcription mode. For Korean or multilingual speech translated into English output, choose Whisper small 4-bit MLX or Whisper large-v3 4-bit MLX and English translation mode.
 
 ## Requirements
 
 - macOS 13+ on Apple Silicon (M1/M2/M3/M4)
-- ~2.5 GB disk space for the default model, or ~3.2 GB if all selectable models are installed
+- ~2.5 GB disk space for the default model, or ~8.1 GB if all selectable models are installed
 - Microphone permission
 - Accessibility permission (for global hotkey)
 
@@ -165,7 +167,7 @@ Open **Settings** from the menu bar to configure:
 | Component | Technology |
 |---|---|
 | UI | PyObjC (AppKit, Quartz) |
-| ASR Models | [Qwen3-ASR-1.7B-8bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), [Whisper small 4-bit](https://huggingface.co/mlx-community/whisper-small-4bit), [Whisper large-v3-turbo 4-bit](https://huggingface.co/mlx-community/whisper-large-v3-turbo-4bit) |
+| ASR Models | [Qwen3-ASR 1.7B 8-bit](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-8bit), [Qwen3-ASR 1.7B BF16 MLX](https://huggingface.co/mlx-community/Qwen3-ASR-1.7B-bf16), [Whisper small 4-bit MLX](https://huggingface.co/mlx-community/whisper-small-4bit), [Whisper large-v3 4-bit MLX](https://huggingface.co/mlx-community/whisper-large-v3-4bit), [Whisper large-v3-turbo 4-bit MLX](https://huggingface.co/mlx-community/whisper-large-v3-turbo-4bit) |
 | Inference | [mlx-audio](https://github.com/ml-explore/mlx-audio) and [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) on Apple Silicon |
 | Audio | sounddevice + soundfile + scipy |
 | Packaging | PyInstaller |
