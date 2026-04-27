@@ -66,12 +66,13 @@ class TestPyInstallerSpec(unittest.TestCase):
 
 
 class TestDistributionDocs(unittest.TestCase):
-    def test_only_english_and_korean_readmes_are_kept(self):
+    def test_only_korean_default_and_english_readmes_are_kept(self):
         obsolete = [
             "README.de.md",
             "README.es.md",
             "README.fr.md",
             "README.ja.md",
+            "README.ko.md",
             "README.zh-Hans.md",
             "README.zh-Hant.md",
         ]
@@ -79,17 +80,21 @@ class TestDistributionDocs(unittest.TestCase):
         for path in obsolete:
             self.assertFalse(pathlib.Path(path).exists(), f"{path} should be removed")
 
+        self.assertTrue(pathlib.Path("README.md").exists())
+        self.assertTrue(pathlib.Path("README.en.md").exists())
+
     def test_distribution_notice_and_privacy_docs_exist(self):
         for path in ["THIRD_PARTY_NOTICES.md", "PRIVACY.md"]:
             self.assertTrue(pathlib.Path(path).exists(), f"{path} should exist")
 
     def test_readme_links_only_current_distribution_docs(self):
-        readme = pathlib.Path("README.md").read_text(encoding="utf-8")
-        korean = pathlib.Path("README.ko.md").read_text(encoding="utf-8")
+        korean = pathlib.Path("README.md").read_text(encoding="utf-8")
+        readme = pathlib.Path("README.en.md").read_text(encoding="utf-8")
 
         for text in [readme, korean]:
             self.assertIn("THIRD_PARTY_NOTICES.md", text)
             self.assertIn("PRIVACY.md", text)
+            self.assertIn("README.en.md", korean)
             self.assertNotIn("README.ja.md", text)
             self.assertNotIn("README.zh-Hans.md", text)
             self.assertNotIn("README.zh-Hant.md", text)
@@ -100,8 +105,8 @@ class TestDistributionDocs(unittest.TestCase):
     def test_readmes_document_all_selectable_asr_models(self):
         from vvrite.asr_models import ASR_MODELS
 
-        readme = pathlib.Path("README.md").read_text(encoding="utf-8")
-        korean = pathlib.Path("README.ko.md").read_text(encoding="utf-8")
+        korean = pathlib.Path("README.md").read_text(encoding="utf-8")
+        readme = pathlib.Path("README.en.md").read_text(encoding="utf-8")
 
         for model in ASR_MODELS.values():
             self.assertIn(model.display_name, readme)
