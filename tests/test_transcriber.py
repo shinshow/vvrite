@@ -1,5 +1,7 @@
 """Tests for ASR transcriber router."""
 
+import os
+import tempfile
 import unittest
 import sys
 import threading
@@ -123,6 +125,40 @@ class TestTranscriberRouter(unittest.TestCase):
 
         self.assertEqual(result, "hello")
         backend.transcribe.assert_called_once()
+
+    @patch("vvrite.transcriber.prepare_model", side_effect=RuntimeError("boom"))
+    def test_transcribe_removes_raw_audio_when_prepare_model_fails(
+        self, mock_prepare_model
+    ):
+        from vvrite import transcriber
+
+        fd, path = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)
+        try:
+            with self.assertRaises(RuntimeError):
+                transcriber.transcribe(path, _Prefs())
+
+            self.assertFalse(os.path.exists(path))
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
+    def test_transcribe_removes_raw_audio_when_mode_is_unsupported(self):
+        from vvrite import transcriber
+
+        class UnsupportedPrefs(_Prefs):
+            output_mode = "translate_to_english"
+
+        fd, path = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)
+        try:
+            with self.assertRaises(RuntimeError):
+                transcriber.transcribe(path, UnsupportedPrefs())
+
+            self.assertFalse(os.path.exists(path))
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
 
     @patch("vvrite.transcriber._whisper_mlx_backend")
     def test_get_model_size_routes_to_mlx_whisper_backend(self, mock_whisper_backend):
@@ -344,6 +380,7 @@ class TestQwenBackend(unittest.TestCase):
             repo_id="mlx-community/Qwen3-ASR-1.7B-8bit",
             local_dir="/tmp/qwen",
             local_files_only=True,
+            revision="a8379a2e2f9e313c9292cdf1af4055ab56d50d55",
         )
 
     @patch("vvrite.asr_backends.qwen.safe_warm_up")
@@ -477,7 +514,20 @@ class TestQwenBackend(unittest.TestCase):
             repo_id="mlx-community/Qwen3-ASR-1.7B-bf16",
             local_dir="/tmp/qwen-bf16",
             local_files_only=True,
+            revision="e1f6c266914abc5a46e8756e02580f834a6cf8a7",
         )
+
+    @patch("vvrite.transcriber.model_info")
+    def test_latest_model_revision_fetches_current_huggingface_sha(self, mock_model_info):
+        from vvrite import transcriber
+
+        mock_model_info.return_value = types.SimpleNamespace(sha="remote-sha")
+
+        self.assertEqual(
+            transcriber.latest_model_revision("qwen3_asr_1_7b_8bit"),
+            "remote-sha",
+        )
+        mock_model_info.assert_called_once_with("mlx-community/Qwen3-ASR-1.7B-8bit")
 
 
 if __name__ == "__main__":

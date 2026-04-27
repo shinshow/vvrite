@@ -1,7 +1,10 @@
 """ASR transcription router."""
 
 from importlib import import_module
+import os
 import threading
+
+from huggingface_hub import model_info
 
 from vvrite.asr_models import (
     BACKEND_QWEN_MLX,
@@ -177,6 +180,12 @@ def download_model(model_id_or_key: str, progress_callback=None) -> str:
     raise RuntimeError(f"Unsupported backend before Whisper task: {model.backend}")
 
 
+def latest_model_revision(model_id_or_key: str) -> str:
+    model = get_model(model_id_or_key)
+    info = model_info(model.model_id)
+    return str(info.sha or "")
+
+
 def load_from_local(local_path: str, prefs: Preferences = None):
     global _loaded_model_key
     with _model_lock:
@@ -228,11 +237,20 @@ def transcribe(raw_wav_path: str, prefs: Preferences = None) -> str:
         prefs = Preferences()
     with _model_lock:
         model = _selected_model(prefs)
-        if not is_output_mode_supported(model.key, prefs.output_mode):
-            raise RuntimeError(
-                f"{model.display_name} does not support output mode {prefs.output_mode}"
-            )
-        prepare_model(prefs)
+        backend_will_cleanup = False
+        try:
+            if not is_output_mode_supported(model.key, prefs.output_mode):
+                raise RuntimeError(
+                    f"{model.display_name} does not support output mode {prefs.output_mode}"
+                )
+            prepare_model(prefs)
+            backend_will_cleanup = True
+        finally:
+            if not backend_will_cleanup:
+                try:
+                    os.unlink(raw_wav_path)
+                except OSError:
+                    pass
         if model.backend == BACKEND_QWEN_MLX:
             return _qwen_backend().transcribe(raw_wav_path, prefs)
         if model.backend == BACKEND_WHISPER_CPP:

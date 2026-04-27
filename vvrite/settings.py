@@ -145,6 +145,7 @@ class SettingsWindowController(NSObject):
         self._model_mode_notice = None
         self._download_model_btn = None
         self._delete_model_btn = None
+        self._check_model_revision_btn = None
         self._download_progress_bar = None
         self._download_progress_label = None
         self._model_downloading = False
@@ -488,6 +489,16 @@ class SettingsWindowController(NSObject):
         self._delete_model_btn.setTarget_(self)
         self._delete_model_btn.setAction_("deleteSelectedModel:")
         panel.addSubview_(self._delete_model_btn)
+
+        y -= 30
+        self._check_model_revision_btn = NSButton.alloc().initWithFrame_(
+            NSMakeRect(20, y, 160, 24)
+        )
+        self._check_model_revision_btn.setTitle_(t("settings.model.check_latest"))
+        self._check_model_revision_btn.setBezelStyle_(NSBezelStyleRounded)
+        self._check_model_revision_btn.setTarget_(self)
+        self._check_model_revision_btn.setAction_("checkLatestModelRevision:")
+        panel.addSubview_(self._check_model_revision_btn)
 
         y -= 24
         self._download_progress_bar = NSProgressIndicator.alloc().initWithFrame_(
@@ -1019,6 +1030,7 @@ class SettingsWindowController(NSObject):
         model_capability_label = getattr(self, "_model_capability_label", None)
         download_model_btn = getattr(self, "_download_model_btn", None)
         delete_model_btn = getattr(self, "_delete_model_btn", None)
+        check_model_revision_btn = getattr(self, "_check_model_revision_btn", None)
         model_downloading = getattr(self, "_model_downloading", False)
 
         if output_mode_popup is not None:
@@ -1056,6 +1068,8 @@ class SettingsWindowController(NSObject):
             )
         if delete_model_btn is not None:
             delete_model_btn.setEnabled_(downloaded and (not model_downloading))
+        if check_model_revision_btn is not None:
+            check_model_revision_btn.setEnabled_(not model_downloading)
 
     def _model_index(self, model_key: str) -> int:
         current_model = get_model(model_key)
@@ -1098,6 +1112,54 @@ class SettingsWindowController(NSObject):
     @objc.typedSelector(b"v@:@")
     def downloadSelectedModel_(self, sender):
         self._begin_model_prepare(self._prefs.asr_model_key)
+
+    @objc.typedSelector(b"v@:@")
+    def checkLatestModelRevision_(self, sender):
+        model_key = self._prefs.asr_model_key
+        threading.Thread(
+            target=self._check_latest_model_revision,
+            args=(model_key,),
+            daemon=True,
+        ).start()
+
+    def _check_latest_model_revision(self, model_key: str):
+        model = get_model(model_key)
+        pinned = model.revision or ""
+        try:
+            latest = transcriber.latest_model_revision(model_key)
+            if latest and latest != pinned:
+                message = t(
+                    "settings.model.latest_available_message",
+                    model=model.display_name,
+                    pinned=pinned[:12],
+                    latest=latest[:12],
+                )
+            else:
+                message = t(
+                    "settings.model.latest_current_message",
+                    model=model.display_name,
+                    pinned=pinned[:12],
+                )
+        except Exception as e:
+            message = t(
+                "settings.model.latest_check_failed_message",
+                model=model.display_name,
+                error=str(e),
+            )
+        self.performSelectorOnMainThread_withObject_waitUntilDone_(
+            "modelRevisionCheckComplete:",
+            message,
+            False,
+        )
+
+    @objc.typedSelector(b"v@:@")
+    def modelRevisionCheckComplete_(self, message):
+        alert = NSAlert.alloc().init()
+        alert.setMessageText_(t("settings.model.latest_check_title"))
+        alert.setInformativeText_(str(message))
+        alert.addButtonWithTitle_(t("common.ok"))
+        NSApp.activateIgnoringOtherApps_(True)
+        alert.runModal()
 
     def _begin_model_prepare(self, model_key: str):
         if self._model_downloading:

@@ -416,6 +416,37 @@ class TestAllLocales(unittest.TestCase):
             missing = en_keys - locale_keys
             self.assertEqual(missing, set(), f"Locale {code} missing keys: {missing}")
 
+    def test_model_revision_check_strings_are_translated(self):
+        from vvrite.locales import SUPPORTED_LANGUAGES, _load_strings
+
+        english_values = {
+            _load_strings("en")["settings"]["model"][key]
+            for key in [
+                "check_latest",
+                "latest_check_title",
+                "latest_available_message",
+                "latest_current_message",
+                "latest_check_failed_message",
+            ]
+        }
+
+        for code, _ in SUPPORTED_LANGUAGES:
+            if code in ("en", "ko"):
+                continue
+            model_strings = _load_strings(code)["settings"]["model"]
+            for key in [
+                "check_latest",
+                "latest_check_title",
+                "latest_available_message",
+                "latest_current_message",
+                "latest_check_failed_message",
+            ]:
+                self.assertNotIn(
+                    model_strings[key],
+                    english_values,
+                    f"Locale {code} still uses English fallback for settings.model.{key}",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

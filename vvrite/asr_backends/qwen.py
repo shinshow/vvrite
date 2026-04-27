@@ -129,6 +129,7 @@ def is_cached(model) -> bool:
             repo_id=_model_id(model),
             local_dir=local_dir,
             local_files_only=True,
+            revision=getattr(model, "revision", None),
         )
         return True
     except Exception:
@@ -137,7 +138,11 @@ def is_cached(model) -> bool:
 
 def get_size(model) -> int:
     try:
-        info = model_info(_model_id(model), files_metadata=True)
+        info = model_info(
+            _model_id(model),
+            revision=getattr(model, "revision", None),
+            files_metadata=True,
+        )
         return sum(s.size for s in info.siblings if s.size)
     except Exception:
         return 0
@@ -153,6 +158,7 @@ def download(model, progress_callback=None) -> str:
         kwargs = {
             "repo_id": _model_id(model),
             "local_dir": local_dir,
+            "revision": getattr(model, "revision", None),
         }
         if progress_callback is not None:
             kwargs["tqdm_class"] = _ProgressTqdm

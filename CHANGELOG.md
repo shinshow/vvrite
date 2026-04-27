@@ -4,6 +4,19 @@ All notable changes to this fork are documented here.
 
 ## Unreleased
 
+## [1.2.1] - 2026-04-28
+
+### Changed
+
+- Pinned Hugging Face ASR model downloads to verified model revisions for reproducible installs.
+- Added a Settings > Model action that checks for newer remote model revisions and reports them without downloading unpinned files.
+- Localized the new model revision check UI across all supported app languages.
+- Bumped app version from `1.2.0` to `1.2.1`.
+
+### Fixed
+
+- Removed temporary dictation audio when transcription fails before a backend can clean up the raw WAV file.
+
 ## [1.2.0] - 2026-04-27
 
 ### Changed

@@ -30,6 +30,7 @@ class AsrModel:
     display_name: str
     backend: str
     model_id: str
+    revision: str | None
     download_url: str | None
     local_filename: str | None
     size_hint: str
@@ -43,6 +44,7 @@ ASR_MODELS = {
         display_name="Qwen3-ASR 1.7B 8-bit",
         backend=BACKEND_QWEN_MLX,
         model_id="mlx-community/Qwen3-ASR-1.7B-8bit",
+        revision="a8379a2e2f9e313c9292cdf1af4055ab56d50d55",
         download_url=None,
         local_filename=None,
         size_hint="~2.5 GB",
@@ -54,6 +56,7 @@ ASR_MODELS = {
         display_name="Qwen3-ASR 1.7B BF16 MLX",
         backend=BACKEND_QWEN_MLX,
         model_id="mlx-community/Qwen3-ASR-1.7B-bf16",
+        revision="e1f6c266914abc5a46e8756e02580f834a6cf8a7",
         download_url=None,
         local_filename=None,
         size_hint="~4.08 GB",
@@ -65,6 +68,7 @@ ASR_MODELS = {
         display_name="Whisper small 4-bit MLX",
         backend=BACKEND_WHISPER_MLX,
         model_id="mlx-community/whisper-small-4bit",
+        revision="1ac90abbb1b2f53863bfd2a483a3c31d792c3e5b",
         download_url=None,
         local_filename=None,
         size_hint="~139 MB",
@@ -76,6 +80,7 @@ ASR_MODELS = {
         display_name="Whisper large-v3 4-bit MLX",
         backend=BACKEND_WHISPER_MLX,
         model_id="mlx-community/whisper-large-v3-4bit",
+        revision="d179def5a85bbcc230fae176f7bd71dd57cb8f45",
         download_url=None,
         local_filename=None,
         size_hint="~878 MB",
@@ -87,6 +92,7 @@ ASR_MODELS = {
         display_name="Whisper large-v3-turbo 4-bit MLX",
         backend=BACKEND_WHISPER_MLX,
         model_id="mlx-community/whisper-large-v3-turbo-4bit",
+        revision="0f058d38170d183f9fdee07908f5b515d91793a8",
         download_url=None,
         local_filename=None,
         size_hint="~463 MB",

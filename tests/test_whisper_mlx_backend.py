@@ -78,6 +78,7 @@ class TestWhisperMlxBackend(unittest.TestCase):
             repo_id="mlx-community/whisper-small-4bit",
             local_dir="/tmp/models/whisper-small-4bit",
             local_files_only=True,
+            revision="1ac90abbb1b2f53863bfd2a483a3c31d792c3e5b",
         )
 
     @patch("vvrite.asr_backends.whisper_mlx.model_store.model_dir")
@@ -102,6 +103,7 @@ class TestWhisperMlxBackend(unittest.TestCase):
         mock_snapshot_download.assert_called_once_with(
             repo_id="mlx-community/whisper-small-4bit",
             local_dir="/tmp/models/whisper-small-4bit",
+            revision="1ac90abbb1b2f53863bfd2a483a3c31d792c3e5b",
             tqdm_class=whisper_mlx._ProgressTqdm,
         )
         progress.assert_any_call(0, 150)

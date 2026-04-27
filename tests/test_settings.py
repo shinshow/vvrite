@@ -522,6 +522,7 @@ class TestSettingsSidebarLayout(unittest.TestCase):
         self.assertIsNotNone(controller._output_mode_popup)
         self.assertIsNotNone(controller._download_model_btn)
         self.assertIsNotNone(controller._delete_model_btn)
+        self.assertIsNotNone(controller._check_model_revision_btn)
 
     def test_output_panel_builds_mode_and_text_controls(self):
         from vvrite.preferences import Preferences
@@ -588,6 +589,42 @@ class TestModeSettingsActions(unittest.TestCase):
         controller.modeChanged_(sender)
 
         self.assertEqual(controller._prefs.selected_mode_key, "note")
+
+
+class TestModelRevisionCheck(unittest.TestCase):
+    def setUp(self):
+        self.controller = SettingsWindowController.alloc().init()
+        self.controller._prefs = MagicMock()
+        self.controller._prefs.asr_model_key = "qwen3_asr_1_7b_8bit"
+
+    @patch("vvrite.settings.transcriber.latest_model_revision", return_value="remote")
+    def test_check_latest_model_revision_reports_newer_remote_revision(self, _mock_latest):
+        self.controller.performSelectorOnMainThread_withObject_waitUntilDone_ = MagicMock()
+
+        self.controller._check_latest_model_revision("qwen3_asr_1_7b_8bit")
+
+        self.controller.performSelectorOnMainThread_withObject_waitUntilDone_.assert_called_once()
+        selector, message, wait = (
+            self.controller.performSelectorOnMainThread_withObject_waitUntilDone_.call_args.args
+        )
+        self.assertEqual(selector, "modelRevisionCheckComplete:")
+        self.assertIn("new", message)
+        self.assertFalse(wait)
+
+    @patch(
+        "vvrite.settings.transcriber.latest_model_revision",
+        return_value="a8379a2e2f9e313c9292cdf1af4055ab56d50d55",
+    )
+    def test_check_latest_model_revision_reports_current_revision(self, _mock_latest):
+        self.controller.performSelectorOnMainThread_withObject_waitUntilDone_ = MagicMock()
+
+        self.controller._check_latest_model_revision("qwen3_asr_1_7b_8bit")
+
+        message = (
+            self.controller.performSelectorOnMainThread_withObject_waitUntilDone_
+            .call_args.args[1]
+        )
+        self.assertIn("up to date", message)
 
 
 if __name__ == "__main__":
